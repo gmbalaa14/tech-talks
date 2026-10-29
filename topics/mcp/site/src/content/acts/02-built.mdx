@@ -1,0 +1,44 @@
+---
+title: How MCP is put together
+summary: Three roles, three things a server can offer, one message format, and two ways to carry it.
+order: 2
+diagram: architecture
+diagramCaption: One client per server. The model never talks to a server directly.
+---
+
+### Host, client, server
+
+- The **host** is the app the person uses: Claude, an IDE, your own agent.
+- The host runs one **MCP client** for each server it connects to.
+- The **server** is a small program that exposes what a system can do, such as Azure DevOps, a database or the file system.
+
+### Three things a server can offer
+
+Each one has a different owner, which decides who triggers it.
+
+| Primitive | Controlled by | What it is | Example |
+|---|---|---|---|
+| Tools | The model | Actions the model can call | Create a work item |
+| Resources | The app | Data the app can read and attach | A file, a query result |
+| Prompts | The user | Reusable templates the user picks | A slash command |
+
+### One message format: JSON-RPC 2.0
+
+Every message is JSON-RPC. A request names a `method` and `params` and carries an `id`. The response repeats the `id` and
+holds either a `result` or an `error`. A message with no `id` is a notification and gets no reply.
+
+<Snippet file="jsonrpc-request.json" lang="json" title="Request" />
+<Snippet file="jsonrpc-response.json" lang="json" title="Response" />
+
+JSON-RPC only defines the shape of a message. How it travels is the transport's job.
+
+### Two ways to carry it
+
+<Diagram name="stack" caption="The same messages travel over either transport. Only the remote path needs HTTPS and OAuth." />
+
+**stdio** is for local servers. The client starts the server as a subprocess, writes messages to its standard input and reads
+replies from its standard output. There is no network and no port, so it is fast and simple, but it only works on the same machine.
+
+**Streamable HTTP** is for remote servers. The server exposes one endpoint, for example `/mcp`. Every message is an HTTP `POST`.
+The server answers with a plain JSON body, or upgrades that response to a Server-Sent Events stream when it needs to send
+progress or several messages. It replaced the older two-connection HTTP+SSE design, which was awkward for proxies and scaling.

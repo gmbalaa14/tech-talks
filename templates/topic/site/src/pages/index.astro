@@ -1,0 +1,143 @@
+---
+import "../../../../../shared/tokens/base.css";
+import "../../../theme.css";
+import "../../../diagram.css";
+import "../styles/site.css";
+import Fact from "../components/Fact.astro";
+import Callout from "../components/Callout.astro";
+import Diagram from "../components/Diagram.astro";
+import Snippet from "../components/Snippet.astro";
+import { meta, facts, changelog, formatDate, loadActs } from "../lib/topic";
+
+const acts = loadActs();
+const base = import.meta.env.BASE_URL; // e.g. /tech-talks/mcp/
+const portalUrl = base.replace(/[^/]+\/$/, ""); // e.g. /tech-talks/
+const hasSlides = true;
+const heroSvgs = import.meta.glob("../../../diagrams/hero.svg", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+const hero = Object.values(heroSvgs)[0];
+const sources = (facts as any).sources ?? [];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.summary} />
+    <link rel="icon" href={`${portalUrl}favicon.svg`} type="image/svg+xml" />
+  </head>
+  <body>
+    <div class="progress" aria-hidden="true"><div class="progress-fill"></div></div>
+
+    <header class="hero">
+      <div class="hero-text">
+        <a class="back" href={portalUrl}>All talks</a>
+        <h1>{meta.title}</h1>
+        <p class="lead">{meta.summary}</p>
+        <p class="fresh">
+          <span class="dot" aria-hidden="true"></span>
+          <span>Covers <Fact k="coversLabel" />. Last reviewed {formatDate((facts as any).lastReviewed)}.</span>
+        </p>
+        <nav class="hero-links" aria-label="Talk resources">
+          {hasSlides && <a class="primary" href={`${base}slides/`}>Open the slides</a>}
+          <a href="#changes">What changed since</a>
+        </nav>
+      </div>
+      {hero && <div class="hero-visual" set:html={hero} />}
+    </header>
+
+    <div class="shell">
+      <nav class="rail" aria-label="Sections">
+        <div class="wire" aria-hidden="true"><div class="wire-fill"></div></div>
+        <ol>
+          {acts.map((a) => (
+            <li>
+              <a href={`#${a.id}`} data-port={a.id}>
+                <span class="port" aria-hidden="true"></span>
+                <span class="port-label">{a.title}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      <main class="acts">
+        {acts.map((a) => (
+          <section id={a.id} class="act" aria-labelledby={`${a.id}-h`}>
+            <header class="act-head">
+              <h2 id={`${a.id}-h`}>{a.title}</h2>
+              {a.summary && <p class="act-lede">{a.summary}</p>}
+            </header>
+            <div class={`act-body ${a.diagram ? "has-visual" : ""}`}>
+              <div class="prose">
+                <a.Content components={{ Fact, Callout, Diagram, Snippet }} />
+              </div>
+              {a.diagram && (
+                <div class="visual">
+                  <Diagram name={a.diagram} caption={a.diagramCaption} />
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
+
+        <section id="changes" class="act changes" aria-labelledby="changes-h">
+          <header class="act-head"><h2 id="changes-h">What changed since</h2>
+            <p class="act-lede">If you attended an earlier session, start here.</p></header>
+          <ol class="changelog">
+            {changelog.map((c: any) => (
+              <li>
+                <time datetime={c.date}>{formatDate(c.date)}</time>
+                <p>{c.summary}</p>
+              </li>
+            ))}
+          </ol>
+          {sources.length > 0 && (
+            <>
+              <h3 class="sources-h">Sources</h3>
+              <ul class="sources">
+                {sources.map((s: string) => <li><a href={s}>{s}</a></li>)}
+              </ul>
+            </>
+          )}
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const ports = Array.from(document.querySelectorAll<HTMLElement>("[data-port]"));
+      const sections = ports.map((p) => document.getElementById(p.dataset.port!)!);
+      const root = document.documentElement;
+      let ticking = false;
+
+      function update() {
+        ticking = false;
+        const max = root.scrollHeight - window.innerHeight;
+        root.style.setProperty("--progress", String(max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0));
+
+        const line = window.innerHeight * 0.35;
+        let active = 0;
+        sections.forEach((el, i) => { if (el.getBoundingClientRect().top <= line) active = i; });
+
+        // Fill the wire up to the active port plus how far through that act we are.
+        const top = sections[active].getBoundingClientRect().top;
+        const next = sections[active + 1];
+        const end = next ? next.getBoundingClientRect().top : sections[active].getBoundingClientRect().bottom;
+        const frac = Math.min(1, Math.max(0, (line - top) / Math.max(1, end - top)));
+        const wire = sections.length > 1 ? (active + frac) / (sections.length - 1) : 1;
+        root.style.setProperty("--wire", String(Math.min(1, wire)));
+
+        ports.forEach((el, i) => {
+          el.classList.toggle("is-active", i === active);
+          el.classList.toggle("is-passed", i < active);
+          if (i === active) el.setAttribute("aria-current", "true"); else el.removeAttribute("aria-current");
+        });
+      }
+      const schedule = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+      window.addEventListener("scroll", schedule, { passive: true });
+      window.addEventListener("resize", schedule);
+      update();
+    </script>
+  </body>
+</html>

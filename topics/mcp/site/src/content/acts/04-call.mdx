@@ -1,0 +1,46 @@
+---
+title: One tool call, end to end
+summary: How a client finds out what a server offers, how the model picks a tool, and what comes back.
+order: 4
+diagram: call
+diagramCaption: Discovery is optional in 2026-07-28. The call itself is always one self-contained request.
+---
+
+### The client does not need to know in advance
+
+A server describes itself at runtime. In `2026-07-28` a client can call `server/discover` and get the protocol version,
+capabilities and tool list in one response. `tools/list` still works and is the normal path when a server does not offer discovery.
+Responses carry `ttlMs` and `cacheScope` hints so clients and gateways can cache the catalog.
+
+Before 2026-07-28 the order was `initialize` first, then `tools/list`, `resources/list` and `prompts/list`.
+
+### Each tool describes its own input
+
+<Snippet file="tool-definition.json" lang="json" title="A tool definition from tools/list" />
+
+The model reads these descriptions and schemas, matches your request to a tool, and writes arguments that fit `inputSchema`.
+Nothing about the format is hard-coded in the client.
+
+### What comes back
+
+A tool result holds a `content` array of typed blocks.
+
+| Block | Carries |
+|---|---|
+| `text` | A string. Servers often put JSON, Markdown, CSV or logs inside it. |
+| `image` and `audio` | Base64 data plus a MIME type. |
+| `resource_link` | A URI the client can fetch later, which avoids sending large data inline. |
+| Embedded resource | A resource with either `text` or a base64 `blob` and a MIME type. |
+
+A tool can also declare an `outputSchema` and return `structuredContent`, validated JSON that a client can parse directly.
+`isError` marks a failure inside the tool, as opposed to a protocol error.
+
+<Snippet file="tool-result.json" lang="json" title="A result with both text and structured content" />
+
+### Who turns data into a table
+
+The spec enforces the block types and, when a schema is declared, the shape of `structuredContent`. It does not look inside a
+`text` block. There is no table type. A server returns rows as structured JSON or as text, and the model or the client
+renders them the way you asked, as a table, a summary or a chart.
+
+Binary data is base64 inside JSON, so keep it small or send a resource link.

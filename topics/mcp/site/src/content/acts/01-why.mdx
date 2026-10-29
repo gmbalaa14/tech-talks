@@ -1,0 +1,38 @@
+---
+title: Every AI app needed its own plug
+summary: MCP replaces one-off integrations with a shared protocol. It started inside Anthropic and now lives under neutral governance.
+order: 1
+diagram: nxm
+diagramCaption: Three apps and three tools need nine connectors on their own, and six with a shared protocol.
+---
+
+### The problem
+
+By 2024, language-model apps could call tools, but every connection was custom. If Claude, an IDE and your own app
+all needed to read the same repository or database, someone built that glue three times. With N apps and M tools that is
+N × M integrations, and each new app or tool makes the pile bigger.
+
+### The idea
+
+MCP, the Model Context Protocol, borrows its approach from the Language Server Protocol that editors use. A tool describes
+itself once as an **MCP server**. Any app that speaks the protocol, an **MCP client**, can then discover and use it.
+The work drops from N × M to N + M.
+
+### From side project to standard
+
+| When | What happened |
+|---|---|
+| Nov 2024 | Anthropic open-sources MCP with the first spec, `2024-11-05`, plus SDKs and reference servers. |
+| Mar 2025 | Revision `2025-03-26` introduces Streamable HTTP, replacing the older HTTP+SSE transport. |
+| Jun 2025 | Revision `2025-06-18` adds structured tool output and elicitation, and treats servers as OAuth resource servers. |
+| Nov 2025 | Revision `2025-11-25` adds OpenID Connect discovery, URL-mode elicitation, Client ID Metadata Documents and experimental Tasks. |
+| <Fact k="foundationDate" /> | MCP is donated to the <Fact k="foundation" />. Anthropic, Block and OpenAI co-found it. |
+| <Fact k="specFinalDate" /> | Revision `2026-07-28` is final: the largest rewrite since launch, and the subject of most of this guide. |
+
+At the time of the donation MCP had <Fact k="serverCount" /> and <Fact k="sdkDownloads" />. The maintainer structure stayed
+the same, and the foundation does not set the protocol's technical direction.
+
+<Callout kind="note" label="Is it an official standard?">
+MCP is an open protocol governed by its own proposal process (Specification Enhancement Proposals), not an IETF or ISO
+standard. It builds on standards that are: JSON-RPC 2.0, OAuth 2.x and OpenID Connect.
+</Callout>

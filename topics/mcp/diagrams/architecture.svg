@@ -1,0 +1,42 @@
+<svg class="diagram" viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A host contains an AI model and one MCP client per server. Clients talk to servers over stdio or Streamable HTTP. Servers reach local tools or remote APIs.">
+  <defs>
+    <marker id="ar-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="ar-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-data"/></marker>
+  </defs>
+
+  <rect x="10" y="10" width="540" height="140" rx="14" class="d-client" style="fill-opacity:.55"/>
+  <text x="26" y="34" class="d-title">Host: Claude, an IDE, or your own app</text>
+
+  <path d="M166 88H384" class="d-wire-client"/>
+  <rect x="26" y="50" width="140" height="76" rx="10" class="d-box"/>
+  <text x="96" y="84" text-anchor="middle" class="d-title">AI model</text>
+  <text x="96" y="105" text-anchor="middle" class="d-small">picks the tool</text>
+  <rect x="214" y="62" width="150" height="52" rx="10" class="d-client"/>
+  <text x="289" y="93" text-anchor="middle" class="d-title">MCP client A</text>
+  <rect x="384" y="62" width="150" height="52" rx="10" class="d-client"/>
+  <text x="459" y="93" text-anchor="middle" class="d-title">MCP client B</text>
+
+  <path d="M289 114V208" class="d-wire-client" marker-end="url(#ar-c)"/>
+  <text x="281" y="170" text-anchor="end" class="d-mono">stdio</text>
+  <path d="M459 114V208" class="d-wire-client" marker-end="url(#ar-c)"/>
+  <text x="451" y="170" text-anchor="end" class="d-mono">Streamable HTTP</text>
+
+  <rect x="214" y="210" width="150" height="52" rx="10" class="d-server"/>
+  <text x="289" y="241" text-anchor="middle" class="d-title">MCP server A</text>
+  <rect x="384" y="210" width="150" height="52" rx="10" class="d-server"/>
+  <text x="459" y="241" text-anchor="middle" class="d-title">MCP server B</text>
+
+  <path d="M289 262V298" class="d-wire-data" marker-end="url(#ar-d)"/>
+  <path d="M459 262V298" class="d-wire-data" marker-end="url(#ar-d)"/>
+  <rect x="214" y="300" width="150" height="48" rx="10" class="d-data"/>
+  <text x="289" y="322" text-anchor="middle" class="d-title" style="font-size:14px">Local files</text>
+  <text x="289" y="339" text-anchor="middle" class="d-small">and tools</text>
+  <rect x="384" y="300" width="150" height="48" rx="10" class="d-data"/>
+  <text x="459" y="322" text-anchor="middle" class="d-title" style="font-size:14px">Remote API</text>
+  <text x="459" y="339" text-anchor="middle" class="d-small">e.g. Azure DevOps</text>
+
+  <text x="26" y="232" class="d-title">A server offers</text>
+  <text x="26" y="256" class="d-small">tools: model actions</text>
+  <text x="26" y="276" class="d-small">resources: app data</text>
+  <text x="26" y="296" class="d-small">prompts: user templates</text>
+</svg>

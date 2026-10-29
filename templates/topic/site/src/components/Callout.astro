@@ -1,0 +1,9 @@
+---
+// <Callout kind="changed" label="New in the latest spec">...</Callout>
+// kinds: note (default), changed (something moved in a spec revision), warn (security or a gotcha)
+const { kind = "note", label } = Astro.props as { kind?: "note" | "changed" | "warn"; label?: string };
+---
+<aside class={`callout callout-${kind}`}>
+  {label && <p class="callout-label">{label}</p>}
+  <div class="callout-body"><slot /></div>
+</aside>

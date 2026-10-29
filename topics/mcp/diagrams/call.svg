@@ -1,0 +1,27 @@
+<svg class="diagram" viewBox="0 0 560 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client discovers the server's tools, the model picks one, the client calls it, and the server returns content">
+  <defs>
+    <marker id="ca-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="ca-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+  </defs>
+  <rect x="20" y="10" width="140" height="40" rx="10" class="d-client"/>
+  <text x="90" y="36" text-anchor="middle" class="d-title">Client</text>
+  <rect x="400" y="10" width="140" height="40" rx="10" class="d-server"/>
+  <text x="470" y="36" text-anchor="middle" class="d-title">Server</text>
+  <path d="M90 50V360" class="d-lifeline"/>
+  <path d="M470 50V360" class="d-lifeline"/>
+
+  <path d="M92 92H468" class="d-wire-client" marker-end="url(#ca-c)"/>
+  <text x="280" y="82" text-anchor="middle" class="d-mono">server/discover</text>
+  <path d="M468 134H92" class="d-wire-server" marker-end="url(#ca-s)"/>
+  <text x="280" y="124" text-anchor="middle" class="d-small">capabilities, tools with input schemas, ttlMs</text>
+
+  <rect x="110" y="166" width="230" height="46" rx="10" class="d-note"/>
+  <text x="225" y="187" text-anchor="middle" class="d-small" style="fill:var(--color-text)">The model reads the schemas</text>
+  <text x="225" y="204" text-anchor="middle" class="d-small" style="fill:var(--color-text)">and picks a tool for your request</text>
+
+  <path d="M92 258H468" class="d-wire-client" marker-end="url(#ca-c)"/>
+  <text x="280" y="248" text-anchor="middle" class="d-mono">tools/call { name, arguments }</text>
+  <path d="M468 322H92" class="d-wire-server" marker-end="url(#ca-s)"/>
+  <text x="280" y="296" text-anchor="middle" class="d-small">result: content blocks and optional structuredContent</text>
+  <text x="280" y="312" text-anchor="middle" class="d-small">isError: true when the tool itself failed</text>
+</svg>

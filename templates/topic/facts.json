@@ -1,0 +1,6 @@
+{
+  "_note": "Everything that can go stale lives here. Pages and slides read it through <Fact k=\"...\" />, so one edit updates both. Bump lastReviewed after each review.",
+  "coversLabel": "__TITLE__ as of __TODAY__",
+  "lastReviewed": "__TODAY__",
+  "sources": []
+}

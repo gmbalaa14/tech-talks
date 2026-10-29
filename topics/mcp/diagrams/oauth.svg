@@ -1,0 +1,33 @@
+<svg class="diagram" viewBox="0 0 560 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client calls a protected MCP server, gets a 401, signs in with the authorization server using OAuth and PKCE, then retries with a bearer token">
+  <defs>
+    <marker id="oa-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="oa-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+    <marker id="oa-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-auth"/></marker>
+  </defs>
+  <rect x="10" y="8" width="120" height="38" rx="10" class="d-client"/>
+  <text x="70" y="32" text-anchor="middle" class="d-title">Client</text>
+  <rect x="220" y="8" width="120" height="38" rx="10" class="d-server"/>
+  <text x="280" y="32" text-anchor="middle" class="d-title">MCP server</text>
+  <rect x="430" y="8" width="120" height="38" rx="10" class="d-auth"/>
+  <text x="490" y="32" text-anchor="middle" class="d-title">Auth server</text>
+  <path d="M70 46V420M280 46V420M490 46V420" class="d-lifeline"/>
+
+  <path d="M72 84H278" class="d-wire-client" marker-end="url(#oa-c)"/>
+  <text x="175" y="76" text-anchor="middle" class="d-small">1 request, no token</text>
+  <path d="M278 122H72" class="d-wire-server" marker-end="url(#oa-s)"/>
+  <text x="175" y="114" text-anchor="middle" class="d-small">2 401 + auth server pointer</text>
+
+  <path d="M72 168H488" class="d-wire-auth" marker-end="url(#oa-a)"/>
+  <text x="380" y="160" text-anchor="middle" class="d-small">3 sign in: OAuth with PKCE</text>
+  <path d="M488 206H72" class="d-wire-auth" marker-end="url(#oa-a)"/>
+  <text x="380" y="198" text-anchor="middle" class="d-small">4 access token for this server only</text>
+
+  <path d="M72 262H278" class="d-wire-client" marker-end="url(#oa-c)"/>
+  <text x="175" y="254" text-anchor="middle" class="d-small">5 request + Bearer token</text>
+  <rect x="190" y="282" width="180" height="62" rx="10" class="d-note"/>
+  <text x="280" y="303" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Server checks signature,</text>
+  <text x="280" y="320" text-anchor="middle" class="d-small" style="fill:var(--color-text)">expiry, audience and scope</text>
+  <text x="280" y="337" text-anchor="middle" class="d-small" style="fill:var(--color-text)">on every call</text>
+  <path d="M278 380H72" class="d-wire-server" marker-end="url(#oa-s)"/>
+  <text x="175" y="372" text-anchor="middle" class="d-small">6 result</text>
+</svg>

@@ -1,0 +1,40 @@
+<svg class="diagram" viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Before 2026-07-28 a client was pinned to one server instance by a session id. Now every request is self-contained and any instance can answer.">
+  <defs>
+    <marker id="se-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+  </defs>
+
+  <!-- Before -->
+  <rect x="10" y="10" width="265" height="300" rx="12" class="d-box"/>
+  <text x="26" y="36" class="d-title">Until 2025-11-25</text>
+  <text x="26" y="55" class="d-small">pinned to one instance</text>
+  <rect x="26" y="110" width="80" height="48" rx="10" class="d-client"/>
+  <text x="66" y="139" text-anchor="middle" class="d-title">Client</text>
+  <rect x="180" y="84" width="80" height="44" rx="10" class="d-server"/>
+  <text x="220" y="111" text-anchor="middle" class="d-title">Server A</text>
+  <rect x="180" y="150" width="80" height="44" rx="10" class="d-gone"/>
+  <text x="220" y="177" text-anchor="middle" class="d-title d-muted">Server B</text>
+  <path d="M106 125L178 108" class="d-wire-client" marker-end="url(#se-c)"/>
+  <path d="M106 143L178 168" class="d-wire-client d-dash" style="opacity:.45"/>
+  <path d="M150 150L166 164M166 150L150 164" class="d-strike"/>
+  <text x="26" y="228" class="d-mono" style="font-size:11px">initialize</text>
+  <text x="26" y="248" class="d-mono" style="font-size:11px">Mcp-Session-Id: 1868…</text>
+  <text x="26" y="276" class="d-small">Needs sticky routing or a</text>
+  <text x="26" y="294" class="d-small">shared session store</text>
+
+  <!-- After -->
+  <rect x="285" y="10" width="265" height="300" rx="12" class="d-box"/>
+  <text x="301" y="36" class="d-title">From 2026-07-28 <tspan class="d-small">(latest)</tspan></text>
+  <text x="301" y="55" class="d-small">every request stands alone</text>
+  <rect x="301" y="110" width="80" height="48" rx="10" class="d-client"/>
+  <text x="341" y="139" text-anchor="middle" class="d-title">Client</text>
+  <rect x="455" y="84" width="80" height="44" rx="10" class="d-server"/>
+  <text x="495" y="111" text-anchor="middle" class="d-title">Server A</text>
+  <rect x="455" y="150" width="80" height="44" rx="10" class="d-server"/>
+  <text x="495" y="177" text-anchor="middle" class="d-title">Server B</text>
+  <path d="M381 125L453 108" class="d-wire-client" marker-end="url(#se-c)"/>
+  <path d="M381 143L453 168" class="d-wire-client" marker-end="url(#se-c)"/>
+  <text x="301" y="228" class="d-mono" style="font-size:11px">MCP-Protocol-Version: 2026-07-28</text>
+  <text x="301" y="248" class="d-mono" style="font-size:11px">Mcp-Method: tools/call</text>
+  <text x="301" y="276" class="d-small">Any instance can answer.</text>
+  <text x="301" y="294" class="d-small">No handshake, no session.</text>
+</svg>

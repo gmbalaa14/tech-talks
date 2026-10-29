@@ -1,0 +1,32 @@
+{
+  "_note": "Token NAMES are a contract. Add tokens freely; never rename or remove one. Topics supply values in topics/<slug>/theme.css.",
+  "required": [
+    "--color-bg",
+    "--color-surface",
+    "--color-surface-2",
+    "--color-text",
+    "--color-muted",
+    "--color-line",
+    "--color-accent",
+    "--color-accent-ink",
+    "--color-warn",
+    "--role-client",
+    "--role-server",
+    "--role-auth",
+    "--role-data",
+    "--font-display",
+    "--font-body",
+    "--font-mono",
+    "--space-1",
+    "--space-2",
+    "--space-3",
+    "--space-4",
+    "--space-5",
+    "--space-6",
+    "--radius-s",
+    "--radius-m",
+    "--measure",
+    "--motion-fast",
+    "--motion-slow"
+  ]
+}

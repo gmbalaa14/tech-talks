@@ -1,0 +1,16 @@
+{
+  "name": "@tech-talks/__SLUG__-slides",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "slidev slides.md --open",
+    "build": "slidev build slides.md --base __BASE__/slides/ --out dist",
+    "export": "slidev export slides.md --output dist/__SLUG__.pdf"
+  },
+  "dependencies": {
+    "@slidev/cli": "^53.0.0",
+    "@slidev/theme-default": "latest",
+    "vue": "^3.5.0"
+  }
+}

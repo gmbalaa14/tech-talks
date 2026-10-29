@@ -1,0 +1,39 @@
+/*
+  Diagram classes used by the SVG files in diagrams/.
+  SVG presentation attributes cannot use var(), so the SVGs carry class names
+  and these rules map them to the theme tokens. Shared by site and slides.
+*/
+.diagram { width: 100%; height: auto; display: block; }
+.diagram text { font-family: var(--font-body); fill: var(--color-text); font-size: 15px; }
+.diagram .d-small { font-size: 12.5px; fill: var(--color-muted); }
+.diagram .d-title { font-weight: 700; font-size: 16px; }
+.diagram .d-mono { font-family: var(--font-mono); font-size: 13px; }
+.diagram .d-muted { fill: var(--color-muted); }
+.diagram .d-inv { fill: #fff; }
+
+.diagram .d-box { fill: var(--color-surface); stroke: var(--color-line); stroke-width: 1.5; }
+.diagram .d-client { fill: color-mix(in srgb, var(--role-client) 14%, var(--color-surface)); stroke: var(--role-client); stroke-width: 2; }
+.diagram .d-server { fill: color-mix(in srgb, var(--role-server) 14%, var(--color-surface)); stroke: var(--role-server); stroke-width: 2; }
+.diagram .d-auth { fill: color-mix(in srgb, var(--role-auth) 14%, var(--color-surface)); stroke: var(--role-auth); stroke-width: 2; }
+.diagram .d-data { fill: color-mix(in srgb, var(--role-data) 14%, var(--color-surface)); stroke: var(--role-data); stroke-width: 2; }
+.diagram .d-warnbox { fill: color-mix(in srgb, var(--color-warn) 12%, var(--color-surface)); stroke: var(--color-warn); stroke-width: 2; }
+.diagram .d-gone { fill: var(--color-surface-2); stroke: var(--color-line); stroke-width: 1.5; stroke-dasharray: 5 4; }
+
+.diagram .d-line { stroke: var(--color-line); stroke-width: 2; fill: none; }
+.diagram .d-wire-client { stroke: var(--role-client); stroke-width: 2.5; fill: none; }
+.diagram .d-wire-server { stroke: var(--role-server); stroke-width: 2.5; fill: none; }
+.diagram .d-wire-auth { stroke: var(--role-auth); stroke-width: 2.5; fill: none; }
+.diagram .d-wire-data { stroke: var(--role-data); stroke-width: 2.5; fill: none; }
+.diagram .d-dash { stroke-dasharray: 6 5; }
+.diagram .d-head-client { fill: var(--role-client); }
+.diagram .d-head-server { fill: var(--role-server); }
+.diagram .d-head-auth { fill: var(--role-auth); }
+.diagram .d-head-data { fill: var(--role-data); }
+.diagram .d-pill-client { fill: var(--role-client); }
+.diagram .d-pill-server { fill: var(--role-server); }
+.diagram .d-pill-auth { fill: var(--role-auth); }
+.diagram .d-pill-warn { fill: var(--color-warn); }
+.diagram .d-strike { stroke: var(--color-warn); stroke-width: 3; }
+.diagram .d-ink { fill: var(--color-text); }
+.diagram .d-note { fill: var(--color-surface-2); stroke: var(--color-line); stroke-width: 1.5; }
+.diagram .d-lifeline { stroke: var(--color-line); stroke-width: 2; stroke-dasharray: 3 6; fill: none; }

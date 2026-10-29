@@ -1,0 +1,23 @@
+---
+title: Before you ship
+summary: A short checklist, and where to keep learning.
+order: 7
+---
+
+### A checklist for an MCP server
+
+- Name tools for what they do, and describe every input. The model reads these words.
+- Return `structuredContent` with an `outputSchema` when a client needs to parse the result.
+- Keep results small. Send a `resource_link` for large data.
+- Do not keep state in memory between calls. Hand out explicit ids instead.
+- Require OAuth for anything remote. Validate signature, expiry, audience and scope on every call.
+- Never forward a client's token to another service. Get a separate token for that hop.
+- Give each token the least scope it needs, and ask for more only when a call requires it.
+- Treat everything a tool returns as untrusted text before it reaches a model, and ask a person before risky actions.
+- Test with the Inspector, then with a real client.
+- Pin the spec revision you target and watch for the next one.
+
+### Staying current
+
+This guide covers <Fact k="coversLabel" />. The protocol has had five dated revisions in about two years, so check the
+sources below and the list of changes at the end of this page before you rely on a detail.

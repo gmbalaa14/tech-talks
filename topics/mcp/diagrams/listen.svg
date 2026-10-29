@@ -1,0 +1,28 @@
+<svg class="diagram" viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client opens one long-lived subscriptions/listen request with a filter, and the server streams matching change events back on that response">
+  <defs>
+    <marker id="li-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="li-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+  </defs>
+  <rect x="10" y="40" width="110" height="120" rx="12" class="d-client"/>
+  <text x="65" y="105" text-anchor="middle" class="d-title">Client</text>
+  <rect x="440" y="40" width="110" height="120" rx="12" class="d-server"/>
+  <text x="495" y="105" text-anchor="middle" class="d-title">Server</text>
+
+  <path d="M122 66H438" class="d-wire-client" marker-end="url(#li-c)"/>
+  <text x="280" y="54" text-anchor="middle" class="d-mono">POST subscriptions/listen { filter }</text>
+
+  <rect x="130" y="92" width="300" height="44" rx="22" class="d-data" style="fill-opacity:.5"/>
+  <rect x="138" y="102" width="82" height="24" rx="12" class="d-pill-server"/>
+  <text x="179" y="118" text-anchor="middle" class="d-small d-inv" style="fill:#fff;font-size:10px">tools changed</text>
+  <rect x="228" y="102" width="98" height="24" rx="12" class="d-pill-server"/>
+  <text x="277" y="118" text-anchor="middle" class="d-small d-inv" style="fill:#fff;font-size:10px">resource updated</text>
+  <rect x="334" y="102" width="92" height="24" rx="12" class="d-pill-server"/>
+  <text x="380" y="118" text-anchor="middle" class="d-small d-inv" style="fill:#fff;font-size:10px">prompts changed</text>
+  <text x="280" y="176" text-anchor="middle" class="d-small">events stream back on the same response, each tagged with a subscription id</text>
+
+  <path d="M438 148H122" class="d-wire-server" marker-end="url(#li-s)"/>
+
+  <rect x="10" y="206" width="540" height="68" rx="12" class="d-warnbox"/>
+  <text x="26" y="232" class="d-title">If the stream drops</text>
+  <text x="26" y="254" class="d-small">There is no resume. Open a new listen request, then refetch the lists you care about.</text>
+</svg>

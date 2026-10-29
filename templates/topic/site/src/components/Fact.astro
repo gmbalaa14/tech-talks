@@ -1,0 +1,8 @@
+---
+// <Fact k="specRevision" /> prints a value from facts.json, so one edit updates every page and slide.
+import { facts } from "../lib/topic";
+const { k } = Astro.props as { k: string };
+const value = (facts as Record<string, unknown>)[k];
+if (value === undefined) throw new Error(`<Fact k="${k}"> is not defined in facts.json`);
+---
+<span class="fact">{String(value)}</span>

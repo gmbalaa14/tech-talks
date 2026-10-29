@@ -67,6 +67,8 @@ jobs:
         with:
           name: out-${{ matrix.topic }}
           path: .out
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 1
 
   build-portal:
@@ -85,6 +87,8 @@ jobs:
         with:
           name: out-portal
           path: .out
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 1
 
   publish:

@@ -1,0 +1,710 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MCP under the hood</title><meta name="description" content="How AI agents connect to your tools: the wire format, the stateless 2026 spec, and the security model, explained for developers."><link rel="icon" href="/tech-talks/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/tech-talks/mcp/_astro/index.BoTaDSEr.css"></head><body><div class="progress" aria-hidden="true"><div class="progress-fill"></div></div><header class="hero"><div class="hero-text"><a class="back" href="/tech-talks/">All talks</a><h1>MCP under the hood</h1><p class="lead">How AI agents connect to your tools: the wire format, the stateless 2026 spec, and the security model, explained for developers.</p><p class="fresh"><span class="dot" aria-hidden="true"></span><span>Covers <span class="fact">MCP spec 2026-07-28</span>. Last reviewed 27 Oct 2026.</span></p><nav class="hero-links" aria-label="Talk resources"><a class="primary" href="/tech-talks/mcp/slides/">Open the slides</a><a href="#changes">What changed since</a></nav></div><div class="hero-visual"><svg class="diagram" viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three AI apps and three tools all connect through one MCP socket">
+  <!-- cables first, so the boxes sit on top -->
+  <path d="M150 62H215" class="d-wire-client"/>
+  <path d="M150 190H215" class="d-wire-client"/>
+  <path d="M150 318H215" class="d-wire-client"/>
+  <path d="M345 62H410" class="d-wire-server"/>
+  <path d="M345 190H410" class="d-wire-server"/>
+  <path d="M345 318H410" class="d-wire-server"/>
+
+  <rect x="10" y="30" width="140" height="64" rx="10" class="d-client"/>
+  <text x="80" y="68" text-anchor="middle" class="d-title">Claude</text>
+  <rect x="10" y="158" width="140" height="64" rx="10" class="d-client"/>
+  <text x="80" y="196" text-anchor="middle" class="d-title">Your IDE</text>
+  <rect x="10" y="286" width="140" height="64" rx="10" class="d-client"/>
+  <text x="80" y="324" text-anchor="middle" class="d-title">Your own app</text>
+
+  <rect x="215" y="14" width="130" height="352" rx="16" class="d-ink"/>
+  <text x="280" y="188" text-anchor="middle" class="d-title d-inv" style="font-size:26px">MCP</text>
+  <text x="280" y="212" text-anchor="middle" class="d-small d-inv" style="fill:#fff;opacity:.8">one plug</text>
+  <circle cx="215" cy="62" r="7" class="d-pill-client"/><circle cx="215" cy="190" r="7" class="d-pill-client"/><circle cx="215" cy="318" r="7" class="d-pill-client"/>
+  <circle cx="345" cy="62" r="7" class="d-pill-server"/><circle cx="345" cy="190" r="7" class="d-pill-server"/><circle cx="345" cy="318" r="7" class="d-pill-server"/>
+
+  <rect x="410" y="30" width="140" height="64" rx="10" class="d-server"/>
+  <text x="480" y="68" text-anchor="middle" class="d-title">Azure DevOps</text>
+  <rect x="410" y="158" width="140" height="64" rx="10" class="d-server"/>
+  <text x="480" y="196" text-anchor="middle" class="d-title">A database</text>
+  <rect x="410" y="286" width="140" height="64" rx="10" class="d-server"/>
+  <text x="480" y="324" text-anchor="middle" class="d-title">Your files</text>
+</svg>
+</div></header><div class="shell"><nav class="rail" aria-label="Sections"><div class="wire" aria-hidden="true"><div class="wire-fill"></div></div><ol><li><a href="#why" data-port="why"><span class="port" aria-hidden="true"></span><span class="port-label">Every AI app needed its own plug</span></a></li><li><a href="#built" data-port="built"><span class="port" aria-hidden="true"></span><span class="port-label">How MCP is put together</span></a></li><li><a href="#shift" data-port="shift"><span class="port" aria-hidden="true"></span><span class="port-label">The session is gone</span></a></li><li><a href="#call" data-port="call"><span class="port" aria-hidden="true"></span><span class="port-label">One tool call, end to end</span></a></li><li><a href="#security" data-port="security"><span class="port" aria-hidden="true"></span><span class="port-label">Security: who may call what</span></a></li><li><a href="#build" data-port="build"><span class="port" aria-hidden="true"></span><span class="port-label">Building and choosing</span></a></li><li><a href="#ship" data-port="ship"><span class="port" aria-hidden="true"></span><span class="port-label">Before you ship</span></a></li></ol></nav><main class="acts"><section id="why" class="act" aria-labelledby="why-h"><header class="act-head"><h2 id="why-h">Every AI app needed its own plug</h2><p class="act-lede">MCP replaces one-off integrations with a shared protocol. It started inside Anthropic and now lives under neutral governance.</p></header><div class="act-body has-visual"><div class="prose"><h3 id="the-problem">The problem</h3>
+<p>By 2024, language-model apps could call tools, but every connection was custom. If Claude, an IDE and your own app
+all needed to read the same repository or database, someone built that glue three times. With N apps and M tools that is
+N × M integrations, and each new app or tool makes the pile bigger.</p>
+<h3 id="the-idea">The idea</h3>
+<p>MCP, the Model Context Protocol, borrows its approach from the Language Server Protocol that editors use. A tool describes
+itself once as an <strong>MCP server</strong>. Any app that speaks the protocol, an <strong>MCP client</strong>, can then discover and use it.
+The work drops from N × M to N + M.</p>
+<h3 id="from-side-project-to-standard">From side project to standard</h3>
+<table>
+<thead>
+<tr>
+<th>When</th>
+<th>What happened</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nov 2024</td>
+<td>Anthropic open-sources MCP with the first spec, <code>2024-11-05</code>, plus SDKs and reference servers.</td>
+</tr>
+<tr>
+<td>Mar 2025</td>
+<td>Revision <code>2025-03-26</code> introduces Streamable HTTP, replacing the older HTTP+SSE transport.</td>
+</tr>
+<tr>
+<td>Jun 2025</td>
+<td>Revision <code>2025-06-18</code> adds structured tool output and elicitation, and treats servers as OAuth resource servers.</td>
+</tr>
+<tr>
+<td>Nov 2025</td>
+<td>Revision <code>2025-11-25</code> adds OpenID Connect discovery, URL-mode elicitation, Client ID Metadata Documents and experimental Tasks.</td>
+</tr>
+<tr>
+<td><span class="fact">9 December 2025</span></td>
+<td>MCP is donated to the <span class="fact">Agentic AI Foundation, a directed fund under the Linux Foundation</span>. Anthropic, Block and OpenAI co-found it.</td>
+</tr>
+<tr>
+<td><span class="fact">28 July 2026</span></td>
+<td>Revision <code>2026-07-28</code> is final: the largest rewrite since launch, and the subject of most of this guide.</td>
+</tr>
+</tbody>
+</table>
+<p>At the time of the donation MCP had <span class="fact">more than 10,000 active servers</span> and <span class="fact">over 97 million monthly SDK downloads</span>. The maintainer structure stayed
+the same, and the foundation does not set the protocol’s technical direction.</p>
+<aside class="callout callout-note"><p class="callout-label">Is it an official standard?</p><div class="callout-body"><p>MCP is an open protocol governed by its own proposal process (Specification Enhancement Proposals), not an IETF or ISO
+standard. It builds on standards that are: JSON-RPC 2.0, OAuth 2.x and OpenID Connect.</p></div></aside></div><div class="visual"><figure class="figure"><div><svg class="diagram" viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Without MCP, three apps and three tools need nine integrations. With MCP they need six.">
+  <!-- Left: every pair -->
+  <text x="10" y="22" class="d-title">Before: a connector for every pair</text>
+  <g class="d-line" style="stroke-width:1.5">
+    <path d="M80 70L200 70M80 70L200 140M80 70L200 210"/>
+    <path d="M80 140L200 70M80 140L200 140M80 140L200 210"/>
+    <path d="M80 210L200 70M80 210L200 140M80 210L200 210"/>
+  </g>
+  <rect x="10" y="50" width="70" height="40" rx="8" class="d-client"/><text x="45" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 1</text>
+  <rect x="10" y="120" width="70" height="40" rx="8" class="d-client"/><text x="45" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 2</text>
+  <rect x="10" y="190" width="70" height="40" rx="8" class="d-client"/><text x="45" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 3</text>
+  <rect x="200" y="50" width="70" height="40" rx="8" class="d-server"/><text x="235" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool A</text>
+  <rect x="200" y="120" width="70" height="40" rx="8" class="d-server"/><text x="235" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool B</text>
+  <rect x="200" y="190" width="70" height="40" rx="8" class="d-server"/><text x="235" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool C</text>
+  <text x="140" y="272" text-anchor="middle" class="d-title" style="fill:var(--color-warn)">3 × 3 = 9 integrations</text>
+  <text x="140" y="296" text-anchor="middle" class="d-small">Each new app or tool multiplies the work</text>
+
+  <!-- Right: through MCP -->
+  <text x="290" y="22" class="d-title">With MCP: one plug each</text>
+  <g class="d-line" style="stroke-width:2">
+    <path d="M370 70H405M370 140H405M370 210H405"/>
+    <path d="M455 70H490M455 140H490M455 210H490"/>
+  </g>
+  <rect x="290" y="50" width="70" height="40" rx="8" class="d-client"/><text x="325" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 1</text>
+  <rect x="290" y="120" width="70" height="40" rx="8" class="d-client"/><text x="325" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 2</text>
+  <rect x="290" y="190" width="70" height="40" rx="8" class="d-client"/><text x="325" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 3</text>
+  <rect x="405" y="40" width="50" height="200" rx="10" class="d-ink"/>
+  <text x="430" y="145" text-anchor="middle" class="d-title d-inv" style="font-size:14px">MCP</text>
+  <rect x="490" y="50" width="70" height="40" rx="8" class="d-server"/><text x="525" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool A</text>
+  <rect x="490" y="120" width="70" height="40" rx="8" class="d-server"/><text x="525" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool B</text>
+  <rect x="490" y="190" width="70" height="40" rx="8" class="d-server"/><text x="525" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool C</text>
+  <text x="425" y="272" text-anchor="middle" class="d-title" style="fill:var(--role-server)">3 + 3 = 6 integrations</text>
+  <text x="425" y="296" text-anchor="middle" class="d-small">Each new app or tool adds one</text>
+</svg>
+</div><figcaption>Three apps and three tools need nine connectors on their own, and six with a shared protocol.</figcaption></figure></div></div></section><section id="built" class="act" aria-labelledby="built-h"><header class="act-head"><h2 id="built-h">How MCP is put together</h2><p class="act-lede">Three roles, three things a server can offer, one message format, and two ways to carry it.</p></header><div class="act-body has-visual"><div class="prose"><h3 id="host-client-server">Host, client, server</h3>
+<ul>
+<li>The <strong>host</strong> is the app the person uses: Claude, an IDE, your own agent.</li>
+<li>The host runs one <strong>MCP client</strong> for each server it connects to.</li>
+<li>The <strong>server</strong> is a small program that exposes what a system can do, such as Azure DevOps, a database or the file system.</li>
+</ul>
+<h3 id="three-things-a-server-can-offer">Three things a server can offer</h3>
+<p>Each one has a different owner, which decides who triggers it.</p>
+<table>
+<thead>
+<tr>
+<th>Primitive</th>
+<th>Controlled by</th>
+<th>What it is</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tools</td>
+<td>The model</td>
+<td>Actions the model can call</td>
+<td>Create a work item</td>
+</tr>
+<tr>
+<td>Resources</td>
+<td>The app</td>
+<td>Data the app can read and attach</td>
+<td>A file, a query result</td>
+</tr>
+<tr>
+<td>Prompts</td>
+<td>The user</td>
+<td>Reusable templates the user picks</td>
+<td>A slash command</td>
+</tr>
+</tbody>
+</table>
+<h3 id="one-message-format-json-rpc-20">One message format: JSON-RPC 2.0</h3>
+<p>Every message is JSON-RPC. A request names a <code>method</code> and <code>params</code> and carries an <code>id</code>. The response repeats the <code>id</code> and
+holds either a <code>result</code> or an <code>error</code>. A message with no <code>id</code> is a notification and gets no reply.</p>
+<figure class="snippet"><figcaption>Request</figcaption><pre class="astro-code github-light" style="background-color:#fff;color:#24292e; overflow-x: auto;" tabindex="0" data-language="json"><code><span class="line"><span style="color:#24292E">{</span></span>
+<span class="line"><span style="color:#005CC5">  "jsonrpc"</span><span style="color:#24292E">: </span><span style="color:#032F62">"2.0"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "id"</span><span style="color:#24292E">: </span><span style="color:#005CC5">1</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "method"</span><span style="color:#24292E">: </span><span style="color:#032F62">"tools/call"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "params"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">    "name"</span><span style="color:#24292E">: </span><span style="color:#032F62">"get_weather"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">    "arguments"</span><span style="color:#24292E">: { </span><span style="color:#005CC5">"city"</span><span style="color:#24292E">: </span><span style="color:#032F62">"London"</span><span style="color:#24292E"> }</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"><span style="color:#24292E">}</span></span></code></pre></figure>
+<figure class="snippet"><figcaption>Response</figcaption><pre class="astro-code github-light" style="background-color:#fff;color:#24292e; overflow-x: auto;" tabindex="0" data-language="json"><code><span class="line"><span style="color:#24292E">{</span></span>
+<span class="line"><span style="color:#005CC5">  "jsonrpc"</span><span style="color:#24292E">: </span><span style="color:#032F62">"2.0"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "id"</span><span style="color:#24292E">: </span><span style="color:#005CC5">1</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "result"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">    "content"</span><span style="color:#24292E">: [{ </span><span style="color:#005CC5">"type"</span><span style="color:#24292E">: </span><span style="color:#032F62">"text"</span><span style="color:#24292E">, </span><span style="color:#005CC5">"text"</span><span style="color:#24292E">: </span><span style="color:#032F62">"14°C, light rain"</span><span style="color:#24292E"> }],</span></span>
+<span class="line"><span style="color:#005CC5">    "isError"</span><span style="color:#24292E">: </span><span style="color:#005CC5">false</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"><span style="color:#24292E">}</span></span></code></pre></figure>
+<p>JSON-RPC only defines the shape of a message. How it travels is the transport’s job.</p>
+<h3 id="two-ways-to-carry-it">Two ways to carry it</h3>
+<figure class="figure"><div><svg class="diagram" viewBox="0 0 560 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MCP layers: tools and resources on top, JSON-RPC messages, then stdio or Streamable HTTP, with HTTPS and OAuth only on the remote path">
+  <rect x="20" y="12" width="520" height="52" rx="10" class="d-server"/>
+  <text x="36" y="36" class="d-title">What the server offers</text>
+  <text x="36" y="54" class="d-small">tools, resources, prompts</text>
+
+  <rect x="20" y="78" width="520" height="52" rx="10" class="d-client"/>
+  <text x="36" y="102" class="d-title">JSON-RPC 2.0</text>
+  <text x="36" y="120" class="d-small">request, response and notification messages</text>
+
+  <rect x="20" y="144" width="250" height="52" rx="10" class="d-box"/>
+  <text x="36" y="168" class="d-title">stdio</text>
+  <text x="36" y="186" class="d-small">client launches the server</text>
+  <rect x="290" y="144" width="250" height="52" rx="10" class="d-box"/>
+  <text x="306" y="168" class="d-title">Streamable HTTP</text>
+  <text x="306" y="186" class="d-small">one POST endpoint, JSON or stream</text>
+
+  <rect x="20" y="210" width="250" height="60" rx="10" class="d-warnbox"/>
+  <text x="36" y="234" class="d-title">Trust comes from you</text>
+  <text x="36" y="254" class="d-small">you chose to run the process</text>
+  <rect x="290" y="210" width="250" height="60" rx="10" class="d-auth"/>
+  <text x="306" y="234" class="d-title">HTTPS and OAuth</text>
+  <text x="306" y="254" class="d-small">TLS plus a bearer token</text>
+</svg>
+</div><figcaption>The same messages travel over either transport. Only the remote path needs HTTPS and OAuth.</figcaption></figure>
+<p><strong>stdio</strong> is for local servers. The client starts the server as a subprocess, writes messages to its standard input and reads
+replies from its standard output. There is no network and no port, so it is fast and simple, but it only works on the same machine.</p>
+<p><strong>Streamable HTTP</strong> is for remote servers. The server exposes one endpoint, for example <code>/mcp</code>. Every message is an HTTP <code>POST</code>.
+The server answers with a plain JSON body, or upgrades that response to a Server-Sent Events stream when it needs to send
+progress or several messages. It replaced the older two-connection HTTP+SSE design, which was awkward for proxies and scaling.</p></div><div class="visual"><figure class="figure"><div><svg class="diagram" viewBox="0 0 560 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A host contains an AI model and one MCP client per server. Clients talk to servers over stdio or Streamable HTTP. Servers reach local tools or remote APIs.">
+  <defs>
+    <marker id="ar-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="ar-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-data"/></marker>
+  </defs>
+
+  <rect x="10" y="10" width="540" height="140" rx="14" class="d-client" style="fill-opacity:.55"/>
+  <text x="26" y="34" class="d-title">Host: Claude, an IDE, or your own app</text>
+
+  <path d="M166 88H384" class="d-wire-client"/>
+  <rect x="26" y="50" width="140" height="76" rx="10" class="d-box"/>
+  <text x="96" y="84" text-anchor="middle" class="d-title">AI model</text>
+  <text x="96" y="105" text-anchor="middle" class="d-small">picks the tool</text>
+  <rect x="214" y="62" width="150" height="52" rx="10" class="d-client"/>
+  <text x="289" y="93" text-anchor="middle" class="d-title">MCP client A</text>
+  <rect x="384" y="62" width="150" height="52" rx="10" class="d-client"/>
+  <text x="459" y="93" text-anchor="middle" class="d-title">MCP client B</text>
+
+  <path d="M289 114V208" class="d-wire-client" marker-end="url(#ar-c)"/>
+  <text x="281" y="170" text-anchor="end" class="d-mono">stdio</text>
+  <path d="M459 114V208" class="d-wire-client" marker-end="url(#ar-c)"/>
+  <text x="451" y="170" text-anchor="end" class="d-mono">Streamable HTTP</text>
+
+  <rect x="214" y="210" width="150" height="52" rx="10" class="d-server"/>
+  <text x="289" y="241" text-anchor="middle" class="d-title">MCP server A</text>
+  <rect x="384" y="210" width="150" height="52" rx="10" class="d-server"/>
+  <text x="459" y="241" text-anchor="middle" class="d-title">MCP server B</text>
+
+  <path d="M289 262V298" class="d-wire-data" marker-end="url(#ar-d)"/>
+  <path d="M459 262V298" class="d-wire-data" marker-end="url(#ar-d)"/>
+  <rect x="214" y="300" width="150" height="48" rx="10" class="d-data"/>
+  <text x="289" y="322" text-anchor="middle" class="d-title" style="font-size:14px">Local files</text>
+  <text x="289" y="339" text-anchor="middle" class="d-small">and tools</text>
+  <rect x="384" y="300" width="150" height="48" rx="10" class="d-data"/>
+  <text x="459" y="322" text-anchor="middle" class="d-title" style="font-size:14px">Remote API</text>
+  <text x="459" y="339" text-anchor="middle" class="d-small">e.g. Azure DevOps</text>
+
+  <text x="26" y="232" class="d-title">A server offers</text>
+  <text x="26" y="256" class="d-small">tools: model actions</text>
+  <text x="26" y="276" class="d-small">resources: app data</text>
+  <text x="26" y="296" class="d-small">prompts: user templates</text>
+</svg>
+</div><figcaption>One client per server. The model never talks to a server directly.</figcaption></figure></div></div></section><section id="shift" class="act" aria-labelledby="shift-h"><header class="act-head"><h2 id="shift-h">The session is gone</h2><p class="act-lede">The 2026-07-28 revision makes MCP stateless at the protocol level, so a server can scale like any other HTTP API.</p></header><div class="act-body has-visual"><div class="prose"><aside class="callout callout-changed"><p class="callout-label">Breaking change in 2026-07-28</p><div class="callout-body"><p>This revision is not backward compatible. If you run or build a server, check that your SDK supports it before you upgrade clients.</p></div></aside>
+<h3 id="what-the-session-cost">What the session cost</h3>
+<p>Until <code>2025-11-25</code>, every connection began with an <code>initialize</code> handshake. The server could answer with an
+<code>Mcp-Session-Id</code>, and the client had to send that id on every later request. That pinned the client to one server
+instance, so a load-balanced deployment needed sticky routing or a shared session store.</p>
+<h3 id="what-changed">What changed</h3>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Until 2025-11-25</th>
+<th>2026-07-28</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Starting</td>
+<td><code>initialize</code>, then <code>initialized</code></td>
+<td>No handshake. Each request carries its protocol version, client info and capabilities in <code>_meta</code></td>
+</tr>
+<tr>
+<td>Session</td>
+<td>The server may issue <code>Mcp-Session-Id</code></td>
+<td>No protocol session and no header</td>
+</tr>
+<tr>
+<td>Learning what a server offers</td>
+<td>Capabilities from <code>initialize</code>, then <code>tools/list</code></td>
+<td><code>server/discover</code> in one call, or <code>tools/list</code></td>
+</tr>
+<tr>
+<td>Change notifications</td>
+<td>An HTTP GET stream and <code>resources/subscribe</code></td>
+<td><code>subscriptions/listen</code> with a filter</td>
+</tr>
+<tr>
+<td>The server needs input</td>
+<td>The server sends a request to the client mid-call</td>
+<td>The server asks, the client retries the call with <code>inputResponses</code></td>
+</tr>
+<tr>
+<td>A broken stream</td>
+<td>Resume with <code>Last-Event-ID</code></td>
+<td>No resume. Send the request again</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>Read the body or pin to an instance</td>
+<td><code>Mcp-Method</code> and <code>Mcp-Name</code> headers, so gateways can route without parsing JSON</td>
+</tr>
+<tr>
+<td>Caching</td>
+<td>Not specified</td>
+<td><code>ttlMs</code> and <code>cacheScope</code> on list and discover results</td>
+</tr>
+</tbody>
+</table>
+<figure class="snippet"><figcaption>One self-contained call. Any server instance can answer it.</figcaption><pre class="astro-code github-light" style="background-color:#fff;color:#24292e; overflow-x: auto;" tabindex="0" data-language="http"><code><span class="line"><span style="color:#D73A49">POST</span><span style="color:#24292E"> /mcp </span><span style="color:#D73A49">HTTP</span><span style="color:#24292E">/</span><span style="color:#005CC5">1.1</span></span>
+<span class="line"><span style="color:#22863A">Host</span><span style="color:#D73A49">:</span><span style="color:#032F62"> mcp.example.com</span></span>
+<span class="line"><span style="color:#22863A">Authorization</span><span style="color:#D73A49">:</span><span style="color:#032F62"> Bearer &#x3C;access-token></span></span>
+<span class="line"><span style="color:#22863A">MCP-Protocol-Version</span><span style="color:#D73A49">:</span><span style="color:#032F62"> 2026-07-28</span></span>
+<span class="line"><span style="color:#22863A">Mcp-Method</span><span style="color:#D73A49">:</span><span style="color:#032F62"> tools/call</span></span>
+<span class="line"><span style="color:#22863A">Mcp-Name</span><span style="color:#D73A49">:</span><span style="color:#032F62"> get_work_item</span></span>
+<span class="line"><span style="color:#22863A">Content-Type</span><span style="color:#D73A49">:</span><span style="color:#032F62"> application/json</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">{</span></span>
+<span class="line"><span style="color:#005CC5">  "jsonrpc"</span><span style="color:#24292E">: </span><span style="color:#032F62">"2.0"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "id"</span><span style="color:#24292E">: </span><span style="color:#005CC5">1</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "method"</span><span style="color:#24292E">: </span><span style="color:#032F62">"tools/call"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "params"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">    "name"</span><span style="color:#24292E">: </span><span style="color:#032F62">"get_work_item"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">    "arguments"</span><span style="color:#24292E">: { </span><span style="color:#005CC5">"id"</span><span style="color:#24292E">: </span><span style="color:#005CC5">1042</span><span style="color:#24292E"> },</span></span>
+<span class="line"><span style="color:#005CC5">    "_meta"</span><span style="color:#24292E">: { </span><span style="color:#005CC5">"io.modelcontextprotocol/protocolVersion"</span><span style="color:#24292E">: </span><span style="color:#032F62">"2026-07-28"</span><span style="color:#24292E"> }</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"><span style="color:#24292E">}</span></span></code></pre></figure>
+<h3 id="where-state-goes-now">Where state goes now</h3>
+<p>Stateless at the protocol layer does not mean your application has no state. A server that needs memory across calls hands out
+an explicit handle, such as a basket id, and the model passes it back as an ordinary argument. The model can see it, reason
+about it and pass it between tools, which a header hidden in the transport never allowed.</p>
+<h3 id="pushing-without-a-session">Pushing without a session</h3>
+<figure class="figure"><div><svg class="diagram" viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client opens one long-lived subscriptions/listen request with a filter, and the server streams matching change events back on that response">
+  <defs>
+    <marker id="li-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="li-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+  </defs>
+  <rect x="10" y="40" width="110" height="120" rx="12" class="d-client"/>
+  <text x="65" y="105" text-anchor="middle" class="d-title">Client</text>
+  <rect x="440" y="40" width="110" height="120" rx="12" class="d-server"/>
+  <text x="495" y="105" text-anchor="middle" class="d-title">Server</text>
+
+  <path d="M122 66H438" class="d-wire-client" marker-end="url(#li-c)"/>
+  <text x="280" y="54" text-anchor="middle" class="d-mono">POST subscriptions/listen { filter }</text>
+
+  <rect x="130" y="92" width="300" height="44" rx="22" class="d-data" style="fill-opacity:.5"/>
+  <rect x="138" y="102" width="82" height="24" rx="12" class="d-pill-server"/>
+  <text x="179" y="118" text-anchor="middle" class="d-small d-inv" style="fill:#fff;font-size:10px">tools changed</text>
+  <rect x="228" y="102" width="98" height="24" rx="12" class="d-pill-server"/>
+  <text x="277" y="118" text-anchor="middle" class="d-small d-inv" style="fill:#fff;font-size:10px">resource updated</text>
+  <rect x="334" y="102" width="92" height="24" rx="12" class="d-pill-server"/>
+  <text x="380" y="118" text-anchor="middle" class="d-small d-inv" style="fill:#fff;font-size:10px">prompts changed</text>
+  <text x="280" y="176" text-anchor="middle" class="d-small">events stream back on the same response, each tagged with a subscription id</text>
+
+  <path d="M438 148H122" class="d-wire-server" marker-end="url(#li-s)"/>
+
+  <rect x="10" y="206" width="540" height="68" rx="12" class="d-warnbox"/>
+  <text x="26" y="232" class="d-title">If the stream drops</text>
+  <text x="26" y="254" class="d-small">There is no resume. Open a new listen request, then refetch the lists you care about.</text>
+</svg>
+</div><figcaption>The subscription is the open request. The server keeps no session table.</figcaption></figure>
+<p>The client sends one <code>subscriptions/listen</code> request with a filter that says what it wants to hear about. The response stays
+open and carries matching events, each tagged with a subscription id. Progress and log messages for a single call still travel
+on that call’s own response.</p>
+<p>Readers who know SignalR will see the similarity: both push server events over a long-lived HTTP connection. The differences matter.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>SignalR</th>
+<th>MCP <code>subscriptions/listen</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Direction</td>
+<td>Two-way on one connection</td>
+<td>Server to client. The client sends new requests separately</td>
+</tr>
+<tr>
+<td>Connection state</td>
+<td>Connection ids, groups, hub state</td>
+<td>None. The filter lives in the request</td>
+</tr>
+<tr>
+<td>Reconnect</td>
+<td>Built in</td>
+<td>Open a new request and refetch</td>
+</tr>
+<tr>
+<td>Scaling</td>
+<td>A backplane to fan out across instances</td>
+<td>Only streams need fan-out. Ordinary calls need nothing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="removed-and-deprecated">Removed and deprecated</h3>
+<aside class="callout callout-changed"><p class="callout-label">Check your clients and servers</p><div class="callout-body"><p>Removed in this revision: <span class="fact">the initialize handshake, session ids, resumability, ping and resources/subscribe</span>. Deprecated: <span class="fact">roots, sampling and logging</span>. Tasks moved out of the core
+specification into an official extension, and a new extensions framework lets extensions version independently of the core.</p></div></aside></div><div class="visual"><figure class="figure"><div><svg class="diagram" viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Before 2026-07-28 a client was pinned to one server instance by a session id. Now every request is self-contained and any instance can answer.">
+  <defs>
+    <marker id="se-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+  </defs>
+
+  <!-- Before -->
+  <rect x="10" y="10" width="265" height="300" rx="12" class="d-box"/>
+  <text x="26" y="36" class="d-title">Until 2025-11-25</text>
+  <text x="26" y="55" class="d-small">pinned to one instance</text>
+  <rect x="26" y="110" width="80" height="48" rx="10" class="d-client"/>
+  <text x="66" y="139" text-anchor="middle" class="d-title">Client</text>
+  <rect x="180" y="84" width="80" height="44" rx="10" class="d-server"/>
+  <text x="220" y="111" text-anchor="middle" class="d-title">Server A</text>
+  <rect x="180" y="150" width="80" height="44" rx="10" class="d-gone"/>
+  <text x="220" y="177" text-anchor="middle" class="d-title d-muted">Server B</text>
+  <path d="M106 125L178 108" class="d-wire-client" marker-end="url(#se-c)"/>
+  <path d="M106 143L178 168" class="d-wire-client d-dash" style="opacity:.45"/>
+  <path d="M150 150L166 164M166 150L150 164" class="d-strike"/>
+  <text x="26" y="228" class="d-mono" style="font-size:11px">initialize</text>
+  <text x="26" y="248" class="d-mono" style="font-size:11px">Mcp-Session-Id: 1868…</text>
+  <text x="26" y="276" class="d-small">Needs sticky routing or a</text>
+  <text x="26" y="294" class="d-small">shared session store</text>
+
+  <!-- After -->
+  <rect x="285" y="10" width="265" height="300" rx="12" class="d-box"/>
+  <text x="301" y="36" class="d-title">From 2026-07-28 <tspan class="d-small">(latest)</tspan></text>
+  <text x="301" y="55" class="d-small">every request stands alone</text>
+  <rect x="301" y="110" width="80" height="48" rx="10" class="d-client"/>
+  <text x="341" y="139" text-anchor="middle" class="d-title">Client</text>
+  <rect x="455" y="84" width="80" height="44" rx="10" class="d-server"/>
+  <text x="495" y="111" text-anchor="middle" class="d-title">Server A</text>
+  <rect x="455" y="150" width="80" height="44" rx="10" class="d-server"/>
+  <text x="495" y="177" text-anchor="middle" class="d-title">Server B</text>
+  <path d="M381 125L453 108" class="d-wire-client" marker-end="url(#se-c)"/>
+  <path d="M381 143L453 168" class="d-wire-client" marker-end="url(#se-c)"/>
+  <text x="301" y="228" class="d-mono" style="font-size:11px">MCP-Protocol-Version: 2026-07-28</text>
+  <text x="301" y="248" class="d-mono" style="font-size:11px">Mcp-Method: tools/call</text>
+  <text x="301" y="276" class="d-small">Any instance can answer.</text>
+  <text x="301" y="294" class="d-small">No handshake, no session.</text>
+</svg>
+</div><figcaption>Same client and tool call, with the session removed.</figcaption></figure></div></div></section><section id="call" class="act" aria-labelledby="call-h"><header class="act-head"><h2 id="call-h">One tool call, end to end</h2><p class="act-lede">How a client finds out what a server offers, how the model picks a tool, and what comes back.</p></header><div class="act-body has-visual"><div class="prose"><h3 id="the-client-does-not-need-to-know-in-advance">The client does not need to know in advance</h3>
+<p>A server describes itself at runtime. In <code>2026-07-28</code> a client can call <code>server/discover</code> and get the protocol version,
+capabilities and tool list in one response. <code>tools/list</code> still works and is the normal path when a server does not offer discovery.
+Responses carry <code>ttlMs</code> and <code>cacheScope</code> hints so clients and gateways can cache the catalog.</p>
+<p>Before 2026-07-28 the order was <code>initialize</code> first, then <code>tools/list</code>, <code>resources/list</code> and <code>prompts/list</code>.</p>
+<h3 id="each-tool-describes-its-own-input">Each tool describes its own input</h3>
+<figure class="snippet"><figcaption>A tool definition from tools/list</figcaption><pre class="astro-code github-light" style="background-color:#fff;color:#24292e; overflow-x: auto;" tabindex="0" data-language="json"><code><span class="line"><span style="color:#24292E">{</span></span>
+<span class="line"><span style="color:#005CC5">  "name"</span><span style="color:#24292E">: </span><span style="color:#032F62">"get_work_item"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "description"</span><span style="color:#24292E">: </span><span style="color:#032F62">"Returns the title and state of a work item by id."</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "inputSchema"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">    "type"</span><span style="color:#24292E">: </span><span style="color:#032F62">"object"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">    "properties"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">      "id"</span><span style="color:#24292E">: { </span><span style="color:#005CC5">"type"</span><span style="color:#24292E">: </span><span style="color:#032F62">"integer"</span><span style="color:#24292E">, </span><span style="color:#005CC5">"description"</span><span style="color:#24292E">: </span><span style="color:#032F62">"Work item id"</span><span style="color:#24292E"> }</span></span>
+<span class="line"><span style="color:#24292E">    },</span></span>
+<span class="line"><span style="color:#005CC5">    "required"</span><span style="color:#24292E">: [</span><span style="color:#032F62">"id"</span><span style="color:#24292E">]</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"><span style="color:#24292E">}</span></span></code></pre></figure>
+<p>The model reads these descriptions and schemas, matches your request to a tool, and writes arguments that fit <code>inputSchema</code>.
+Nothing about the format is hard-coded in the client.</p>
+<h3 id="what-comes-back">What comes back</h3>
+<p>A tool result holds a <code>content</code> array of typed blocks.</p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>Carries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td>A string. Servers often put JSON, Markdown, CSV or logs inside it.</td>
+</tr>
+<tr>
+<td><code>image</code> and <code>audio</code></td>
+<td>Base64 data plus a MIME type.</td>
+</tr>
+<tr>
+<td><code>resource_link</code></td>
+<td>A URI the client can fetch later, which avoids sending large data inline.</td>
+</tr>
+<tr>
+<td>Embedded resource</td>
+<td>A resource with either <code>text</code> or a base64 <code>blob</code> and a MIME type.</td>
+</tr>
+</tbody>
+</table>
+<p>A tool can also declare an <code>outputSchema</code> and return <code>structuredContent</code>, validated JSON that a client can parse directly.
+<code>isError</code> marks a failure inside the tool, as opposed to a protocol error.</p>
+<figure class="snippet"><figcaption>A result with both text and structured content</figcaption><pre class="astro-code github-light" style="background-color:#fff;color:#24292e; overflow-x: auto;" tabindex="0" data-language="json"><code><span class="line"><span style="color:#24292E">{</span></span>
+<span class="line"><span style="color:#005CC5">  "jsonrpc"</span><span style="color:#24292E">: </span><span style="color:#032F62">"2.0"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "id"</span><span style="color:#24292E">: </span><span style="color:#005CC5">1</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">  "result"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">    "content"</span><span style="color:#24292E">: [</span></span>
+<span class="line"><span style="color:#24292E">      { </span><span style="color:#005CC5">"type"</span><span style="color:#24292E">: </span><span style="color:#032F62">"text"</span><span style="color:#24292E">, </span><span style="color:#005CC5">"text"</span><span style="color:#24292E">: </span><span style="color:#032F62">"Work item 1042: Fix login timeout (Active)"</span><span style="color:#24292E"> }</span></span>
+<span class="line"><span style="color:#24292E">    ],</span></span>
+<span class="line"><span style="color:#005CC5">    "structuredContent"</span><span style="color:#24292E">: {</span></span>
+<span class="line"><span style="color:#005CC5">      "id"</span><span style="color:#24292E">: </span><span style="color:#005CC5">1042</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">      "title"</span><span style="color:#24292E">: </span><span style="color:#032F62">"Fix login timeout"</span><span style="color:#24292E">,</span></span>
+<span class="line"><span style="color:#005CC5">      "state"</span><span style="color:#24292E">: </span><span style="color:#032F62">"Active"</span></span>
+<span class="line"><span style="color:#24292E">    },</span></span>
+<span class="line"><span style="color:#005CC5">    "isError"</span><span style="color:#24292E">: </span><span style="color:#005CC5">false</span></span>
+<span class="line"><span style="color:#24292E">  }</span></span>
+<span class="line"><span style="color:#24292E">}</span></span></code></pre></figure>
+<h3 id="who-turns-data-into-a-table">Who turns data into a table</h3>
+<p>The spec enforces the block types and, when a schema is declared, the shape of <code>structuredContent</code>. It does not look inside a
+<code>text</code> block. There is no table type. A server returns rows as structured JSON or as text, and the model or the client
+renders them the way you asked, as a table, a summary or a chart.</p>
+<p>Binary data is base64 inside JSON, so keep it small or send a resource link.</p></div><div class="visual"><figure class="figure"><div><svg class="diagram" viewBox="0 0 560 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client discovers the server's tools, the model picks one, the client calls it, and the server returns content">
+  <defs>
+    <marker id="ca-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="ca-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+  </defs>
+  <rect x="20" y="10" width="140" height="40" rx="10" class="d-client"/>
+  <text x="90" y="36" text-anchor="middle" class="d-title">Client</text>
+  <rect x="400" y="10" width="140" height="40" rx="10" class="d-server"/>
+  <text x="470" y="36" text-anchor="middle" class="d-title">Server</text>
+  <path d="M90 50V360" class="d-lifeline"/>
+  <path d="M470 50V360" class="d-lifeline"/>
+
+  <path d="M92 92H468" class="d-wire-client" marker-end="url(#ca-c)"/>
+  <text x="280" y="82" text-anchor="middle" class="d-mono">server/discover</text>
+  <path d="M468 134H92" class="d-wire-server" marker-end="url(#ca-s)"/>
+  <text x="280" y="124" text-anchor="middle" class="d-small">capabilities, tools with input schemas, ttlMs</text>
+
+  <rect x="110" y="166" width="230" height="46" rx="10" class="d-note"/>
+  <text x="225" y="187" text-anchor="middle" class="d-small" style="fill:var(--color-text)">The model reads the schemas</text>
+  <text x="225" y="204" text-anchor="middle" class="d-small" style="fill:var(--color-text)">and picks a tool for your request</text>
+
+  <path d="M92 258H468" class="d-wire-client" marker-end="url(#ca-c)"/>
+  <text x="280" y="248" text-anchor="middle" class="d-mono">tools/call { name, arguments }</text>
+  <path d="M468 322H92" class="d-wire-server" marker-end="url(#ca-s)"/>
+  <text x="280" y="296" text-anchor="middle" class="d-small">result: content blocks and optional structuredContent</text>
+  <text x="280" y="312" text-anchor="middle" class="d-small">isError: true when the tool itself failed</text>
+</svg>
+</div><figcaption>Discovery is optional in 2026-07-28. The call itself is always one self-contained request.</figcaption></figure></div></div></section><section id="security" class="act" aria-labelledby="security-h"><header class="act-head"><h2 id="security-h">Security: who may call what</h2><p class="act-lede">MCP does not invent its own login scheme. It uses HTTPS and OAuth, and sets rules for how servers and clients use them.</p></header><div class="act-body has-visual"><div class="prose"><h3 id="the-transport">The transport</h3>
+<ul>
+<li><strong>stdio</strong> has no network, so there is no TLS. Trust comes from you choosing to run that process, so run only servers you trust.</li>
+<li><strong>Streamable HTTP</strong> is plain HTTPS. TLS gives encryption and server identity. A server listening on localhost should check the <code>Origin</code> and <code>Host</code> headers so a web page cannot reach it through DNS rebinding.</li>
+</ul>
+<h3 id="authorization-is-optional-and-standard-when-used">Authorization is optional, and standard when used</h3>
+<p>For a protected remote server, MCP follows OAuth 2.1 and OpenID Connect. The server is an OAuth <strong>resource server</strong>.</p>
+<ol>
+<li>The client sends a request and gets <code>401</code> with a pointer to the server’s Protected Resource Metadata (RFC 9728).</li>
+<li>That metadata names the authorization server. The client signs the user in there using the authorization code flow with PKCE.</li>
+<li>The token is issued for this server only, using Resource Indicators (RFC 8707), so the server must check the audience.</li>
+<li>The client sends <code>Authorization: Bearer &lt;token&gt;</code> on every request, never in the URL.</li>
+<li>The server validates the token and the scope on every call. Hiding a tool from a list is a convenience, not a check.</li>
+</ol>
+<p>When a server wants more access than the token has, it answers <code>403</code> and the client can ask for a broader scope. This is
+incremental scope consent.</p>
+<aside class="callout callout-changed"><p class="callout-label">Authorization hardening in 2026-07-28</p><div class="callout-body"><p>Six proposals align MCP with how OAuth is deployed. Clients must validate the <code>iss</code> parameter on authorization responses
+(RFC 9207) and bind registered credentials to the issuing authorization server. This matters because one client talks to
+many authorization servers, which makes mix-up attacks easier. Client ID Metadata Documents now come before Dynamic Client
+Registration, which is deprecated, and refresh-token guidance covers OpenID Connect style servers.</p></div></aside>
+<p>Client registration follows this order when a client supports every option: pre-registered credentials, then Client ID
+Metadata Documents, then Dynamic Client Registration as a fallback, then asking the user.</p>
+<h3 id="where-the-token-lives">Where the token lives</h3>
+<p>The spec leaves storage to the client app. Good clients use the operating system’s secure store, or an encrypted secrets store
+on a server, and keep tokens per user and per MCP server. Access tokens are short-lived and renewed with a refresh token, so a
+restarted app does not ask the user to sign in again.</p>
+<p>In MCP’s OAuth model the host application holds the credential. When a sub-agent calls a tool, the safe pattern is that the host’s
+client attaches the token and the sub-agent never sees it. The catch is that the sub-agent then has the host’s full access to
+that server. To give each hop narrower access, use token exchange (RFC 8693) in your own design. MCP does not prescribe it.</p>
+<h3 id="ways-it-goes-wrong">Ways it goes wrong</h3>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>What happens</th>
+<th>Defence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Confused deputy</td>
+<td>A proxy server that uses one OAuth client toward a third-party service is tricked into granting access to the wrong party</td>
+<td>Per-client consent and strict redirect URI validation</td>
+</tr>
+<tr>
+<td>Token passthrough</td>
+<td>A server accepts a token that was not issued for it and forwards it downstream. The spec forbids this</td>
+<td>Validate the audience, and use a separate token for each hop</td>
+</tr>
+<tr>
+<td>DNS rebinding</td>
+<td>A web page reaches a server running on localhost</td>
+<td>Validate <code>Origin</code> and <code>Host</code>, and bind to localhost</td>
+</tr>
+<tr>
+<td>Authorization server mix-up</td>
+<td>A client is redirected to a hostile authorization server</td>
+<td>Validate <code>iss</code> and bind credentials to the issuer</td>
+</tr>
+<tr>
+<td>Prompt injection and tool poisoning</td>
+<td>Text in a tool description or result tries to steer the model</td>
+<td>Vetted servers, least privilege, human approval for risky actions</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout-warn"><p class="callout-label">What OAuth does not cover</p><div class="callout-body"><p>OAuth decides whether a client gets a token for a server. It says nothing about what a tool does afterwards. A malicious but
+properly authorized server, an over-broad scope or an injected instruction is still your responsibility.</p></div></aside></div><div class="visual"><figure class="figure"><div><svg class="diagram" viewBox="0 0 560 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client calls a protected MCP server, gets a 401, signs in with the authorization server using OAuth and PKCE, then retries with a bearer token">
+  <defs>
+    <marker id="oa-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="oa-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+    <marker id="oa-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" class="d-head-auth"/></marker>
+  </defs>
+  <rect x="10" y="8" width="120" height="38" rx="10" class="d-client"/>
+  <text x="70" y="32" text-anchor="middle" class="d-title">Client</text>
+  <rect x="220" y="8" width="120" height="38" rx="10" class="d-server"/>
+  <text x="280" y="32" text-anchor="middle" class="d-title">MCP server</text>
+  <rect x="430" y="8" width="120" height="38" rx="10" class="d-auth"/>
+  <text x="490" y="32" text-anchor="middle" class="d-title">Auth server</text>
+  <path d="M70 46V420M280 46V420M490 46V420" class="d-lifeline"/>
+
+  <path d="M72 84H278" class="d-wire-client" marker-end="url(#oa-c)"/>
+  <text x="175" y="76" text-anchor="middle" class="d-small">1 request, no token</text>
+  <path d="M278 122H72" class="d-wire-server" marker-end="url(#oa-s)"/>
+  <text x="175" y="114" text-anchor="middle" class="d-small">2 401 + auth server pointer</text>
+
+  <path d="M72 168H488" class="d-wire-auth" marker-end="url(#oa-a)"/>
+  <text x="380" y="160" text-anchor="middle" class="d-small">3 sign in: OAuth with PKCE</text>
+  <path d="M488 206H72" class="d-wire-auth" marker-end="url(#oa-a)"/>
+  <text x="380" y="198" text-anchor="middle" class="d-small">4 access token for this server only</text>
+
+  <path d="M72 262H278" class="d-wire-client" marker-end="url(#oa-c)"/>
+  <text x="175" y="254" text-anchor="middle" class="d-small">5 request + Bearer token</text>
+  <rect x="190" y="282" width="180" height="62" rx="10" class="d-note"/>
+  <text x="280" y="303" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Server checks signature,</text>
+  <text x="280" y="320" text-anchor="middle" class="d-small" style="fill:var(--color-text)">expiry, audience and scope</text>
+  <text x="280" y="337" text-anchor="middle" class="d-small" style="fill:var(--color-text)">on every call</text>
+  <path d="M278 380H72" class="d-wire-server" marker-end="url(#oa-s)"/>
+  <text x="175" y="372" text-anchor="middle" class="d-small">6 result</text>
+</svg>
+</div><figcaption>The server never sees the user&#39;s password. It only checks the token.</figcaption></figure></div></div></section><section id="build" class="act" aria-labelledby="build-h"><header class="act-head"><h2 id="build-h">Building and choosing</h2><p class="act-lede">A first server in C#, how to test it, and how to pick a language.</p></header><div class="act-body "><div class="prose"><h3 id="a-first-server-in-c">A first server in C#</h3>
+<p>An ASP.NET Core server needs one package, one tool class and one endpoint. Stateless mode matches the 2026-07-28 model:
+no session, so any instance can answer.</p>
+<figure class="snippet"><figcaption>Program.cs</figcaption><pre class="astro-code github-light" style="background-color:#fff;color:#24292e; overflow-x: auto;" tabindex="0" data-language="csharp"><code><span class="line"><span style="color:#6A737D">// Minimal remote MCP server</span></span>
+<span class="line"><span style="color:#D73A49">using</span><span style="color:#6F42C1"> System</span><span style="color:#24292E">.</span><span style="color:#6F42C1">ComponentModel</span><span style="color:#24292E">;</span></span>
+<span class="line"><span style="color:#D73A49">using</span><span style="color:#6F42C1"> ModelContextProtocol</span><span style="color:#24292E">.</span><span style="color:#6F42C1">Server</span><span style="color:#24292E">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">var</span><span style="color:#6F42C1"> builder</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> WebApplication.</span><span style="color:#6F42C1">CreateBuilder</span><span style="color:#24292E">(args);</span></span>
+<span class="line"><span style="color:#24292E">builder.Services.</span><span style="color:#6F42C1">AddMcpServer</span><span style="color:#24292E">()</span></span>
+<span class="line"><span style="color:#24292E">    .</span><span style="color:#6F42C1">WithHttpTransport</span><span style="color:#24292E">(</span><span style="color:#6F42C1">o</span><span style="color:#D73A49"> =></span><span style="color:#24292E"> o.Stateless </span><span style="color:#D73A49">=</span><span style="color:#005CC5"> true</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">    .</span><span style="color:#6F42C1">WithToolsFromAssembly</span><span style="color:#24292E">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">var</span><span style="color:#6F42C1"> app</span><span style="color:#D73A49"> =</span><span style="color:#24292E"> builder.</span><span style="color:#6F42C1">Build</span><span style="color:#24292E">();</span></span>
+<span class="line"><span style="color:#24292E">app.</span><span style="color:#6F42C1">MapMcp</span><span style="color:#24292E">(</span><span style="color:#032F62">"/mcp"</span><span style="color:#24292E">);</span></span>
+<span class="line"><span style="color:#24292E">app.</span><span style="color:#6F42C1">Run</span><span style="color:#24292E">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292E">[</span><span style="color:#6F42C1">McpServerToolType</span><span style="color:#24292E">]</span></span>
+<span class="line"><span style="color:#D73A49">public</span><span style="color:#D73A49"> static</span><span style="color:#D73A49"> class</span><span style="color:#6F42C1"> WorkItemTools</span></span>
+<span class="line"><span style="color:#24292E">{</span></span>
+<span class="line"><span style="color:#24292E">    [</span><span style="color:#6F42C1">McpServerTool</span><span style="color:#24292E">, </span><span style="color:#6F42C1">Description</span><span style="color:#24292E">(</span><span style="color:#032F62">"Get a work item by id."</span><span style="color:#24292E">)]</span></span>
+<span class="line"><span style="color:#D73A49">    public</span><span style="color:#D73A49"> static</span><span style="color:#6F42C1"> WorkItem</span><span style="color:#6F42C1"> Get</span><span style="color:#24292E">(</span><span style="color:#D73A49">int</span><span style="color:#6F42C1"> id</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#D73A49">        =></span><span style="color:#D73A49"> new</span><span style="color:#24292E">(id, </span><span style="color:#032F62">"Fix login"</span><span style="color:#24292E">, </span><span style="color:#032F62">"Active"</span><span style="color:#24292E">);</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">public</span><span style="color:#D73A49"> record</span><span style="color:#6F42C1"> WorkItem</span><span style="color:#24292E">(</span><span style="color:#D73A49">int</span><span style="color:#6F42C1"> Id</span><span style="color:#24292E">, </span><span style="color:#D73A49">string</span><span style="color:#6F42C1"> Title</span><span style="color:#24292E">, </span><span style="color:#D73A49">string</span><span style="color:#6F42C1"> State</span><span style="color:#24292E">);</span></span></code></pre></figure>
+<aside class="callout callout-note"><p class="callout-label">Check the SDK version</p><div class="callout-body"><p>This sample is not compiled as part of this repo. API names and defaults change between SDK releases, so check the notes for
+the version you install, and confirm it supports <span class="fact">2026-07-28</span>.</p></div></aside>
+<p>For a local server instead, host the same tools with the stdio transport and let the client launch the process.</p>
+<h3 id="test-it-with-the-inspector">Test it with the Inspector</h3>
+<p>The MCP Inspector lists a server’s tools and lets you call them and see the raw JSON-RPC. Run it with
+<code>npx @modelcontextprotocol/inspector</code>, then point it at your server’s command or URL.</p>
+<h3 id="choosing-a-language">Choosing a language</h3>
+<p>Anything that can speak JSON-RPC over stdio or HTTP can host a server, so the choice is about SDK maturity and your team.</p>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>A good fit when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C# and .NET</td>
+<td>Your logic already lives in .NET and you want ASP.NET Core hosting, auth and DI</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td>You want the reference SDK and the most examples, or fast prototyping</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>The integration is data, ML or scripting work</td>
+</tr>
+<tr>
+<td>Java and Kotlin</td>
+<td>Enterprise back ends, with Spring or Quarkus integrations</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>Small, fast, single-binary servers</td>
+</tr>
+<tr>
+<td>Rust</td>
+<td>Performance or a tiny footprint</td>
+</tr>
+<tr>
+<td>Ruby, PHP and Swift</td>
+<td>You already work in that stack and its SDK covers what you need</td>
+</tr>
+</tbody>
+</table>
+<p>Check each SDK’s release notes for support of <span class="fact">2026-07-28</span> before committing.</p>
+<h3 id="mind-the-context-cost">Mind the context cost</h3>
+<p>Every tool’s name, description and schema is sent to the model, so connecting many servers, or one large server, uses up
+context and can make the model pick the wrong tool. Enable only the tools a task needs.</p></div></div></section><section id="ship" class="act" aria-labelledby="ship-h"><header class="act-head"><h2 id="ship-h">Before you ship</h2><p class="act-lede">A short checklist, and where to keep learning.</p></header><div class="act-body "><div class="prose"><h3 id="a-checklist-for-an-mcp-server">A checklist for an MCP server</h3>
+<ul>
+<li>Name tools for what they do, and describe every input. The model reads these words.</li>
+<li>Return <code>structuredContent</code> with an <code>outputSchema</code> when a client needs to parse the result.</li>
+<li>Keep results small. Send a <code>resource_link</code> for large data.</li>
+<li>Do not keep state in memory between calls. Hand out explicit ids instead.</li>
+<li>Require OAuth for anything remote. Validate signature, expiry, audience and scope on every call.</li>
+<li>Never forward a client’s token to another service. Get a separate token for that hop.</li>
+<li>Give each token the least scope it needs, and ask for more only when a call requires it.</li>
+<li>Treat everything a tool returns as untrusted text before it reaches a model, and ask a person before risky actions.</li>
+<li>Test with the Inspector, then with a real client.</li>
+<li>Pin the spec revision you target and watch for the next one.</li>
+</ul>
+<h3 id="staying-current">Staying current</h3>
+<p>This guide covers <span class="fact">MCP spec 2026-07-28</span>. The protocol has had five dated revisions in about two years, so check the
+sources below and the list of changes at the end of this page before you rely on a detail.</p></div></div></section><section id="changes" class="act changes" aria-labelledby="changes-h"><header class="act-head"><h2 id="changes-h">What changed since</h2><p class="act-lede">If you attended an earlier session, start here.</p></header><ol class="changelog"><li><time datetime="2026-10-27">27 Oct 2026</time><p>First version, written against spec 2026-07-28: stateless core, server/discover, subscriptions/listen, and the authorization hardening.</p></li></ol><h3 class="sources-h">Sources</h3><ul class="sources"><li><a href="https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28">https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28</a></li><li><a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog">https://modelcontextprotocol.io/specification/2026-07-28/changelog</a></li><li><a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http">https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http</a></li><li><a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/</a></li><li><a href="https://modelcontextprotocol.info/blog/joins-agentic-ai-foundation/">https://modelcontextprotocol.info/blog/joins-agentic-ai-foundation/</a></li><li><a href="https://modelcontextprotocol.info/specification/">https://modelcontextprotocol.info/specification/</a></li><li><a href="https://csharp.sdk.modelcontextprotocol.io/v2/concepts/stateless/stateless.html">https://csharp.sdk.modelcontextprotocol.io/v2/concepts/stateless/stateless.html</a></li><li><a href="https://quarkus.io/blog/mcp-stateless/">https://quarkus.io/blog/mcp-stateless/</a></li><li><a href="https://workos.com/blog/mcp-2026-spec-agent-authentication">https://workos.com/blog/mcp-2026-spec-agent-authentication</a></li><li><a href="https://ssojet.com/blog/mcp-authorization-spec-2026-07-28-what-changed">https://ssojet.com/blog/mcp-authorization-spec-2026-07-28-what-changed</a></li><li><a href="https://developer.konghq.com/ai-gateway/mcp-version-support/">https://developer.konghq.com/ai-gateway/mcp-version-support/</a></li></ul></section></main></div><script type="module">var e=Array.from(document.querySelectorAll(`[data-port]`)),t=e.map(e=>document.getElementById(e.dataset.port)),n=document.documentElement,r=!1;function i(){r=!1;let i=n.scrollHeight-window.innerHeight;n.style.setProperty(`--progress`,String(i>0?Math.min(1,Math.max(0,window.scrollY/i)):0));let a=window.innerHeight*.35,o=0;t.forEach((e,t)=>{e.getBoundingClientRect().top<=a&&(o=t)});let s=t[o].getBoundingClientRect().top,c=t[o+1],l=c?c.getBoundingClientRect().top:t[o].getBoundingClientRect().bottom,u=Math.min(1,Math.max(0,(a-s)/Math.max(1,l-s))),d=t.length>1?(o+u)/(t.length-1):1;n.style.setProperty(`--wire`,String(Math.min(1,d))),e.forEach((e,t)=>{e.classList.toggle(`is-active`,t===o),e.classList.toggle(`is-passed`,t<o),t===o?e.setAttribute(`aria-current`,`true`):e.removeAttribute(`aria-current`)})}var a=()=>{r||(r=!0,requestAnimationFrame(i))};window.addEventListener(`scroll`,a,{passive:!0}),window.addEventListener(`resize`,a),i();</script></body></html>

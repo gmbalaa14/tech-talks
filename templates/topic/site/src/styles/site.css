@@ -1,0 +1,160 @@
+/* Scroll-site styles. Uses ONLY semantic tokens, so any topic theme works unchanged. */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--color-accent); text-underline-offset: 3px; }
+a:focus-visible, .port-label:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; border-radius: var(--radius-s); }
+:target { scroll-margin-top: var(--space-5); }
+
+/* ---- Reading progress (small screens) ---- */
+.progress { display: none; position: fixed; inset: 0 0 auto 0; height: 4px; z-index: 20; background: transparent; }
+.progress-fill { height: 100%; transform-origin: left; transform: scaleX(var(--progress, 0)); background: var(--color-accent); }
+
+/* ---- Hero ---- */
+.hero {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-5);
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+}
+.back { display: inline-block; margin-bottom: var(--space-4); color: var(--color-muted); font-size: 0.95rem; }
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 5.6vw, 4.1rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  margin: 0 0 var(--space-3);
+  text-wrap: balance;
+}
+.lead { font-size: 1.28rem; line-height: 1.45; color: var(--color-muted); margin: 0 0 var(--space-4); max-width: 34rem; }
+.fresh { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-4); font-size: 0.95rem; color: var(--color-muted); }
+.dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--role-server); flex: none; }
+.hero-links { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.hero-links a {
+  text-decoration: none; font-weight: 600; padding: 0.6rem 1.1rem; border-radius: var(--radius-s);
+  border: 1.5px solid var(--color-text); color: var(--color-text);
+  transition: background var(--motion-fast), color var(--motion-fast);
+}
+.hero-links a:hover { background: var(--color-text); color: var(--color-bg); }
+.hero-links a.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.hero-links a.primary:hover { filter: brightness(0.92); }
+.hero-visual svg { width: 100%; height: auto; display: block; }
+
+/* ---- Shell: rail + acts ---- */
+.shell {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 var(--space-4) var(--space-6);
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: var(--space-5);
+}
+
+/* The wire: one vertical line with a port per act. It fills as you read. */
+.rail { position: sticky; top: var(--space-5); align-self: start; --port-h: 2.75rem; padding-top: 0; }
+.rail ol { list-style: none; margin: 0; padding: 0; }
+.rail li { height: var(--port-h); display: flex; align-items: center; }
+.rail a { display: flex; align-items: center; gap: var(--space-3); text-decoration: none; color: var(--color-muted); font-size: 0.95rem; line-height: 1.25; }
+.rail a:hover { color: var(--color-text); }
+.wire {
+  position: absolute;
+  left: calc(0.525rem - 1.5px);
+  top: calc(var(--port-h) / 2);
+  height: calc(100% - var(--port-h));
+  width: 3px;
+  background: var(--color-line);
+  border-radius: 2px;
+}
+.wire-fill { width: 100%; height: calc(var(--wire, 0) * 100%); background: var(--color-accent); border-radius: 2px; }
+.port {
+  position: relative; z-index: 1; flex: none; width: 1.05rem; height: 1.05rem; border-radius: 50%;
+  background: var(--color-bg); border: 3px solid var(--color-line);
+  transition: border-color var(--motion-fast), background var(--motion-fast), transform var(--motion-fast);
+}
+.is-passed .port { border-color: var(--color-accent); background: var(--color-accent); }
+.is-active .port { border-color: var(--color-accent); background: var(--color-bg); transform: scale(1.2); }
+.is-active { color: var(--color-text); font-weight: 600; }
+
+/* ---- Acts ---- */
+.act { padding: var(--space-5) 0 var(--space-6); border-top: 1px solid var(--color-line); }
+.act:first-child { border-top: 0; padding-top: var(--space-5); }
+.act-head { max-width: 46rem; margin-bottom: var(--space-4); }
+.act h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.4vw, 2.55rem);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  margin: 0 0 var(--space-2);
+  text-wrap: balance;
+}
+.act-lede { margin: 0; font-size: 1.15rem; color: var(--color-muted); }
+
+.act-body { display: grid; gap: var(--space-5); }
+.act-body.has-visual { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: start; }
+.visual { position: sticky; top: var(--space-5); }
+.figure { margin: 0; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-m); padding: var(--space-3); }
+.figure figcaption { margin-top: var(--space-2); font-size: 0.9rem; color: var(--color-muted); }
+
+/* ---- Prose ---- */
+.prose { max-width: var(--measure); }
+.prose > :first-child { margin-top: 0; }
+.prose p, .prose ul, .prose ol { margin: 0 0 var(--space-3); }
+.prose h3 { font-family: var(--font-display); font-size: 1.3rem; line-height: 1.25; letter-spacing: -0.01em; margin: var(--space-4) 0 var(--space-2); }
+.prose li { margin-bottom: var(--space-1); }
+.prose code { font-family: var(--font-mono); font-size: 0.88em; background: var(--color-surface-2); padding: 0.1em 0.38em; border-radius: var(--radius-s); }
+.prose pre { margin: 0 0 var(--space-3); padding: var(--space-3); overflow-x: auto; border: 1px solid var(--color-line); border-radius: var(--radius-m); background: var(--color-surface) !important; font-size: 0.86rem; line-height: 1.55; }
+.prose pre code { background: none; padding: 0; font-size: inherit; }
+.prose table { width: 100%; border-collapse: collapse; margin: 0 0 var(--space-3); font-size: 0.95rem; }
+.prose th, .prose td { text-align: left; vertical-align: top; padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 1px solid var(--color-line); }
+.prose th { font-weight: 700; border-bottom: 2px solid var(--color-text); }
+.fact { font-weight: 600; }
+
+.callout { margin: 0 0 var(--space-3); padding: var(--space-3); border-radius: var(--radius-m); border: 1px solid var(--color-line); border-left: 5px solid var(--color-accent); background: var(--color-surface); }
+.callout p { margin: 0 0 var(--space-2); }
+.callout p:last-child { margin-bottom: 0; }
+.callout-label { font-weight: 700; margin: 0 0 var(--space-1) !important; }
+.callout-changed { border-left-color: var(--role-auth); background: color-mix(in srgb, var(--role-auth) 7%, var(--color-surface)); }
+.callout-changed .callout-label { color: var(--role-auth); }
+.callout-warn { border-left-color: var(--color-warn); background: color-mix(in srgb, var(--color-warn) 8%, var(--color-surface)); }
+.callout-warn .callout-label { color: var(--color-warn); }
+
+/* ---- Changelog and sources ---- */
+.changelog { list-style: none; margin: 0; padding: 0; max-width: 46rem; }
+.changelog li { display: grid; grid-template-columns: 8rem 1fr; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--color-line); }
+.changelog time { color: var(--color-muted); font-variant-numeric: tabular-nums; }
+.changelog p { margin: 0; }
+.sources-h { margin: var(--space-5) 0 var(--space-2); font-size: 1.1rem; }
+.sources { margin: 0; padding-left: 1.1rem; font-size: 0.92rem; word-break: break-word; }
+
+/* ---- Responsive ---- */
+@media (max-width: 62rem) {
+  .progress { display: block; }
+  .hero { grid-template-columns: 1fr; padding-top: var(--space-5); }
+  .shell { grid-template-columns: 1fr; }
+  .rail { display: none; }
+  .act-body.has-visual { grid-template-columns: 1fr; }
+  .visual { position: static; }
+}
+@media (max-width: 36rem) {
+  .changelog li { grid-template-columns: 1fr; gap: var(--space-1); }
+}
+
+/* ---- Snippets ---- */
+.snippet { margin: 0 0 var(--space-3); }
+.snippet figcaption { font-size: 0.88rem; color: var(--color-muted); margin-bottom: var(--space-1); }
+.snippet pre { margin: 0; }

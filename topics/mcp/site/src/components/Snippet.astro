@@ -1,0 +1,13 @@
+---
+// <Snippet file="Program.cs" lang="csharp" title="Optional caption" /> shows snippets/<file>.
+// The slides show the same file with Slidev's `<<< ../snippets/<file>` syntax, so there is one copy.
+import { Code } from "astro:components";
+const { file, lang = "text", title } = Astro.props as { file: string; lang?: string; title?: string };
+const all = import.meta.glob("../../../snippets/*", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+const entry = Object.entries(all).find(([p]) => p.endsWith(`/${file}`));
+if (!entry) throw new Error(`Snippet "${file}" not found in snippets/`);
+---
+<figure class="snippet">
+  {title && <figcaption>{title}</figcaption>}
+  <Code code={entry[1].trimEnd()} lang={lang} theme="github-light" />
+</figure>

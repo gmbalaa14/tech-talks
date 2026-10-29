@@ -1,0 +1,11 @@
+---
+// <Diagram name="architecture" caption="..." /> inlines diagrams/<name>.svg so theme tokens apply.
+const { name, caption } = Astro.props as { name: string; caption?: string };
+const all = import.meta.glob("../../../diagrams/*.svg", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+const entry = Object.entries(all).find(([p]) => p.endsWith(`/${name}.svg`));
+if (!entry) throw new Error(`Diagram "${name}" not found in diagrams/`);
+---
+<figure class="figure">
+  <div set:html={entry[1]} />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>

@@ -1,0 +1,10 @@
+{
+  "slug": "__SLUG__",
+  "title": "__TITLE__",
+  "summary": "One sentence that says what this talk covers and who it is for.",
+  "tags": ["draft"],
+  "accent": "#3b5bdb",
+  "icon": "icon.svg",
+  "order": 100,
+  "watch": null
+}

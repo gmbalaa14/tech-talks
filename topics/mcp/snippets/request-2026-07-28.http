@@ -1,0 +1,18 @@
+POST /mcp HTTP/1.1
+Host: mcp.example.com
+Authorization: Bearer <access-token>
+MCP-Protocol-Version: 2026-07-28
+Mcp-Method: tools/call
+Mcp-Name: get_work_item
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_work_item",
+    "arguments": { "id": 1042 },
+    "_meta": { "io.modelcontextprotocol/protocolVersion": "2026-07-28" }
+  }
+}

@@ -1,0 +1,62 @@
+---
+title: The session is gone
+summary: The 2026-07-28 revision makes MCP stateless at the protocol level, so a server can scale like any other HTTP API.
+order: 3
+diagram: session
+diagramCaption: Same client and tool call, with the session removed.
+---
+
+<Callout kind="changed" label="Breaking change in 2026-07-28">
+This revision is not backward compatible. If you run or build a server, check that your SDK supports it before you upgrade clients.
+</Callout>
+
+### What the session cost
+
+Until `2025-11-25`, every connection began with an `initialize` handshake. The server could answer with an
+`Mcp-Session-Id`, and the client had to send that id on every later request. That pinned the client to one server
+instance, so a load-balanced deployment needed sticky routing or a shared session store.
+
+### What changed
+
+| Concern | Until 2025-11-25 | 2026-07-28 |
+|---|---|---|
+| Starting | `initialize`, then `initialized` | No handshake. Each request carries its protocol version, client info and capabilities in `_meta` |
+| Session | The server may issue `Mcp-Session-Id` | No protocol session and no header |
+| Learning what a server offers | Capabilities from `initialize`, then `tools/list` | `server/discover` in one call, or `tools/list` |
+| Change notifications | An HTTP GET stream and `resources/subscribe` | `subscriptions/listen` with a filter |
+| The server needs input | The server sends a request to the client mid-call | The server asks, the client retries the call with `inputResponses` |
+| A broken stream | Resume with `Last-Event-ID` | No resume. Send the request again |
+| Routing | Read the body or pin to an instance | `Mcp-Method` and `Mcp-Name` headers, so gateways can route without parsing JSON |
+| Caching | Not specified | `ttlMs` and `cacheScope` on list and discover results |
+
+<Snippet file="request-2026-07-28.http" lang="http" title="One self-contained call. Any server instance can answer it." />
+
+### Where state goes now
+
+Stateless at the protocol layer does not mean your application has no state. A server that needs memory across calls hands out
+an explicit handle, such as a basket id, and the model passes it back as an ordinary argument. The model can see it, reason
+about it and pass it between tools, which a header hidden in the transport never allowed.
+
+### Pushing without a session
+
+<Diagram name="listen" caption="The subscription is the open request. The server keeps no session table." />
+
+The client sends one `subscriptions/listen` request with a filter that says what it wants to hear about. The response stays
+open and carries matching events, each tagged with a subscription id. Progress and log messages for a single call still travel
+on that call's own response.
+
+Readers who know SignalR will see the similarity: both push server events over a long-lived HTTP connection. The differences matter.
+
+| | SignalR | MCP `subscriptions/listen` |
+|---|---|---|
+| Direction | Two-way on one connection | Server to client. The client sends new requests separately |
+| Connection state | Connection ids, groups, hub state | None. The filter lives in the request |
+| Reconnect | Built in | Open a new request and refetch |
+| Scaling | A backplane to fan out across instances | Only streams need fan-out. Ordinary calls need nothing |
+
+### Removed and deprecated
+
+<Callout kind="changed" label="Check your clients and servers">
+Removed in this revision: <Fact k="removedNow" />. Deprecated: <Fact k="deprecatedNow" />. Tasks moved out of the core
+specification into an official extension, and a new extensions framework lets extensions version independently of the core.
+</Callout>

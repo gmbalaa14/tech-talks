@@ -1,0 +1,34 @@
+<svg class="diagram" viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Without MCP, three apps and three tools need nine integrations. With MCP they need six.">
+  <!-- Left: every pair -->
+  <text x="10" y="22" class="d-title">Before: a connector for every pair</text>
+  <g class="d-line" style="stroke-width:1.5">
+    <path d="M80 70L200 70M80 70L200 140M80 70L200 210"/>
+    <path d="M80 140L200 70M80 140L200 140M80 140L200 210"/>
+    <path d="M80 210L200 70M80 210L200 140M80 210L200 210"/>
+  </g>
+  <rect x="10" y="50" width="70" height="40" rx="8" class="d-client"/><text x="45" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 1</text>
+  <rect x="10" y="120" width="70" height="40" rx="8" class="d-client"/><text x="45" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 2</text>
+  <rect x="10" y="190" width="70" height="40" rx="8" class="d-client"/><text x="45" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 3</text>
+  <rect x="200" y="50" width="70" height="40" rx="8" class="d-server"/><text x="235" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool A</text>
+  <rect x="200" y="120" width="70" height="40" rx="8" class="d-server"/><text x="235" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool B</text>
+  <rect x="200" y="190" width="70" height="40" rx="8" class="d-server"/><text x="235" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool C</text>
+  <text x="140" y="272" text-anchor="middle" class="d-title" style="fill:var(--color-warn)">3 × 3 = 9 integrations</text>
+  <text x="140" y="296" text-anchor="middle" class="d-small">Each new app or tool multiplies the work</text>
+
+  <!-- Right: through MCP -->
+  <text x="290" y="22" class="d-title">With MCP: one plug each</text>
+  <g class="d-line" style="stroke-width:2">
+    <path d="M370 70H405M370 140H405M370 210H405"/>
+    <path d="M455 70H490M455 140H490M455 210H490"/>
+  </g>
+  <rect x="290" y="50" width="70" height="40" rx="8" class="d-client"/><text x="325" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 1</text>
+  <rect x="290" y="120" width="70" height="40" rx="8" class="d-client"/><text x="325" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 2</text>
+  <rect x="290" y="190" width="70" height="40" rx="8" class="d-client"/><text x="325" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">App 3</text>
+  <rect x="405" y="40" width="50" height="200" rx="10" class="d-ink"/>
+  <text x="430" y="145" text-anchor="middle" class="d-title d-inv" style="font-size:14px">MCP</text>
+  <rect x="490" y="50" width="70" height="40" rx="8" class="d-server"/><text x="525" y="75" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool A</text>
+  <rect x="490" y="120" width="70" height="40" rx="8" class="d-server"/><text x="525" y="145" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool B</text>
+  <rect x="490" y="190" width="70" height="40" rx="8" class="d-server"/><text x="525" y="215" text-anchor="middle" class="d-small" style="fill:var(--color-text)">Tool C</text>
+  <text x="425" y="272" text-anchor="middle" class="d-title" style="fill:var(--role-server)">3 + 3 = 6 integrations</text>
+  <text x="425" y="296" text-anchor="middle" class="d-small">Each new app or tool adds one</text>
+</svg>

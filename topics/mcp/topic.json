@@ -1,0 +1,15 @@
+{
+  "slug": "mcp",
+  "title": "MCP under the hood",
+  "summary": "How AI agents connect to your tools: the wire format, the stateless 2026 spec, and the security model, explained for developers.",
+  "tags": ["AI agents", "Protocols", "Security", "C#"],
+  "accent": "#3347d1",
+  "icon": "icon.svg",
+  "order": 10,
+  "watch": {
+    "repo": "modelcontextprotocol/specification",
+    "factKey": "specRevision",
+    "tagPattern": "^\\d{4}-\\d{2}-\\d{2}$",
+    "reviewIntervalDays": 90
+  }
+}

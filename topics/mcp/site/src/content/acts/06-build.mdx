@@ -1,0 +1,45 @@
+---
+title: Building and choosing
+summary: A first server in C#, how to test it, and how to pick a language.
+order: 6
+---
+
+### A first server in C#
+
+An ASP.NET Core server needs one package, one tool class and one endpoint. Stateless mode matches the 2026-07-28 model:
+no session, so any instance can answer.
+
+<Snippet file="Program.cs" lang="csharp" title="Program.cs" />
+
+<Callout kind="note" label="Check the SDK version">
+This sample is not compiled as part of this repo. API names and defaults change between SDK releases, so check the notes for
+the version you install, and confirm it supports <Fact k="specRevision" />.
+</Callout>
+
+For a local server instead, host the same tools with the stdio transport and let the client launch the process.
+
+### Test it with the Inspector
+
+The MCP Inspector lists a server's tools and lets you call them and see the raw JSON-RPC. Run it with
+`npx @modelcontextprotocol/inspector`, then point it at your server's command or URL.
+
+### Choosing a language
+
+Anything that can speak JSON-RPC over stdio or HTTP can host a server, so the choice is about SDK maturity and your team.
+
+| Language | A good fit when |
+|---|---|
+| C# and .NET | Your logic already lives in .NET and you want ASP.NET Core hosting, auth and DI |
+| TypeScript | You want the reference SDK and the most examples, or fast prototyping |
+| Python | The integration is data, ML or scripting work |
+| Java and Kotlin | Enterprise back ends, with Spring or Quarkus integrations |
+| Go | Small, fast, single-binary servers |
+| Rust | Performance or a tiny footprint |
+| Ruby, PHP and Swift | You already work in that stack and its SDK covers what you need |
+
+Check each SDK's release notes for support of <Fact k="specRevision" /> before committing.
+
+### Mind the context cost
+
+Every tool's name, description and schema is sent to the model, so connecting many servers, or one large server, uses up
+context and can make the model pick the wrong tool. Enable only the tools a task needs.

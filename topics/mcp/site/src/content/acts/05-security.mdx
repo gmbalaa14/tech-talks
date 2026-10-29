@@ -1,0 +1,60 @@
+---
+title: "Security: who may call what"
+summary: MCP does not invent its own login scheme. It uses HTTPS and OAuth, and sets rules for how servers and clients use them.
+order: 5
+diagram: oauth
+diagramCaption: The server never sees the user's password. It only checks the token.
+---
+
+### The transport
+
+- **stdio** has no network, so there is no TLS. Trust comes from you choosing to run that process, so run only servers you trust.
+- **Streamable HTTP** is plain HTTPS. TLS gives encryption and server identity. A server listening on localhost should check the `Origin` and `Host` headers so a web page cannot reach it through DNS rebinding.
+
+### Authorization is optional, and standard when used
+
+For a protected remote server, MCP follows OAuth 2.1 and OpenID Connect. The server is an OAuth **resource server**.
+
+1. The client sends a request and gets `401` with a pointer to the server's Protected Resource Metadata (RFC 9728).
+2. That metadata names the authorization server. The client signs the user in there using the authorization code flow with PKCE.
+3. The token is issued for this server only, using Resource Indicators (RFC 8707), so the server must check the audience.
+4. The client sends `Authorization: Bearer <token>` on every request, never in the URL.
+5. The server validates the token and the scope on every call. Hiding a tool from a list is a convenience, not a check.
+
+When a server wants more access than the token has, it answers `403` and the client can ask for a broader scope. This is
+incremental scope consent.
+
+<Callout kind="changed" label="Authorization hardening in 2026-07-28">
+Six proposals align MCP with how OAuth is deployed. Clients must validate the `iss` parameter on authorization responses
+(RFC 9207) and bind registered credentials to the issuing authorization server. This matters because one client talks to
+many authorization servers, which makes mix-up attacks easier. Client ID Metadata Documents now come before Dynamic Client
+Registration, which is deprecated, and refresh-token guidance covers OpenID Connect style servers.
+</Callout>
+
+Client registration follows this order when a client supports every option: pre-registered credentials, then Client ID
+Metadata Documents, then Dynamic Client Registration as a fallback, then asking the user.
+
+### Where the token lives
+
+The spec leaves storage to the client app. Good clients use the operating system's secure store, or an encrypted secrets store
+on a server, and keep tokens per user and per MCP server. Access tokens are short-lived and renewed with a refresh token, so a
+restarted app does not ask the user to sign in again.
+
+In MCP's OAuth model the host application holds the credential. When a sub-agent calls a tool, the safe pattern is that the host's
+client attaches the token and the sub-agent never sees it. The catch is that the sub-agent then has the host's full access to
+that server. To give each hop narrower access, use token exchange (RFC 8693) in your own design. MCP does not prescribe it.
+
+### Ways it goes wrong
+
+| Problem | What happens | Defence |
+|---|---|---|
+| Confused deputy | A proxy server that uses one OAuth client toward a third-party service is tricked into granting access to the wrong party | Per-client consent and strict redirect URI validation |
+| Token passthrough | A server accepts a token that was not issued for it and forwards it downstream. The spec forbids this | Validate the audience, and use a separate token for each hop |
+| DNS rebinding | A web page reaches a server running on localhost | Validate `Origin` and `Host`, and bind to localhost |
+| Authorization server mix-up | A client is redirected to a hostile authorization server | Validate `iss` and bind credentials to the issuer |
+| Prompt injection and tool poisoning | Text in a tool description or result tries to steer the model | Vetted servers, least privilege, human approval for risky actions |
+
+<Callout kind="warn" label="What OAuth does not cover">
+OAuth decides whether a client gets a token for a server. It says nothing about what a tool does afterwards. A malicious but
+properly authorized server, an over-broad scope or an injected instruction is still your responsibility.
+</Callout>

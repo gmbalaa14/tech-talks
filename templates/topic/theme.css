@@ -1,0 +1,9 @@
+/*
+  Topic theme: the "personality" of this talk.
+  Override token VALUES from shared/tokens/base.css. Never rename a token.
+  Both the scroll site and the slides load this file, so they always match.
+*/
+:root {
+  /* --color-accent: #3b5bdb; */
+  /* --font-display: "Your Font Variable", system-ui, sans-serif; */
+}

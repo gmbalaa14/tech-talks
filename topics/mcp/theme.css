@@ -1,0 +1,28 @@
+/*
+  MCP theme: a patch panel. Cool paper, ink text, and one cable colour per role,
+  so a client, a server and an auth server are the same colour on every slide and page.
+*/
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/jetbrains-mono";
+
+:root {
+  --color-bg: #f2f4f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #e7eaf2;
+  --color-text: #14182b;
+  --color-muted: #566079;
+  --color-line: #c9cfdd;
+
+  --color-accent: #3347d1;
+  --color-accent-ink: #ffffff;
+  --color-warn: #b4540a;
+
+  --role-client: #3347d1; /* cobalt cable: the AI app or MCP client */
+  --role-server: #0a7d6e; /* teal cable: the MCP server */
+  --role-auth: #7a3fe0;   /* violet cable: the authorization server and anything new in 2026-07-28 */
+  --role-data: #5d6b82;   /* slate cable: the systems behind a server */
+
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-body: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, Menlo, Consolas, monospace;
+}

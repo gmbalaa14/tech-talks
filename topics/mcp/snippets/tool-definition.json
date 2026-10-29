@@ -1,0 +1,11 @@
+{
+  "name": "get_work_item",
+  "description": "Returns the title and state of a work item by id.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer", "description": "Work item id" }
+    },
+    "required": ["id"]
+  }
+}

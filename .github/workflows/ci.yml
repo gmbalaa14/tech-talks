@@ -1,0 +1,67 @@
+name: CI
+
+# On pull requests: check the token contract and tests, then build only what changed.
+# Nothing is published from here.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      topics: ${{ steps.detect.outputs.topics }}
+      portal: ${{ steps.detect.outputs.portal }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: detect
+        run: node scripts/detect-changes.mjs --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.sha }}"
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  build-topic:
+    needs: plan
+    if: ${{ needs.plan.outputs.topics != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        topic: ${{ fromJSON(needs.plan.outputs.topics) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/build-topic.mjs "${{ matrix.topic }}"
+
+  build-portal:
+    needs: plan
+    if: ${{ needs.plan.outputs.portal == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/build-portal.mjs

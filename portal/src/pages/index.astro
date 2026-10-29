@@ -1,0 +1,63 @@
+---
+import "@fontsource-variable/bricolage-grotesque";
+import "../../../shared/tokens/base.css";
+import "../portal.css";
+import { loadTopics, formatDate } from "../lib/topics";
+
+const topics = loadTopics();
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tech talks</title>
+    <meta name="description" content="Webinars and reference guides for the development team." />
+    <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="intro">
+        <h1>Tech talks</h1>
+        <p>
+          Webinars and reference guides for the development team. Each talk has a guide you can read
+          at your own pace and a slide deck for the live session.
+        </p>
+      </header>
+
+      {topics.length === 0 ? (
+        <p class="empty">
+          No topics yet. Run <code>npm run new-topic -- my-topic "My topic"</code> to add the first one.
+        </p>
+      ) : (
+        <ul class="topics">
+          {topics.map((t) => (
+            <li class="topic" style={`--topic-accent: ${t.accent}`}>
+              <a class="topic-icon" href={`${base}/${t.slug}/`} aria-hidden="true" tabindex="-1" set:html={t.iconSvg} />
+              <div class="topic-body">
+                <h2><a href={`${base}/${t.slug}/`}>{t.title}</a></h2>
+                <p>{t.summary}</p>
+                {t.tags.length > 0 && (
+                  <ul class="tags" aria-label="Tags">
+                    {t.tags.map((tag) => <li>{tag}</li>)}
+                  </ul>
+                )}
+                {t.covers && (
+                  <p class="fresh">
+                    Covers {t.covers}. Last reviewed {formatDate(t.lastReviewed)}.
+                  </p>
+                )}
+              </div>
+              <div class="topic-links">
+                <a class="primary" href={`${base}/${t.slug}/`}>Read the guide</a>
+                {t.hasSlides && <a href={`${base}/${t.slug}/slides/`}>Open the slides</a>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  </body>
+</html>

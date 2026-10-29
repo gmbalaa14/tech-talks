@@ -1,0 +1,31 @@
+name: Spec watch
+
+# Once a month, check whether anything a topic was written against has moved:
+#   - a newer upstream release than the topic's recorded revision (facts.json)
+#   - a review that is older than the topic's reviewIntervalDays
+#   - source links that no longer load
+# Each finding opens (or reuses) a GitHub issue. Nothing is edited automatically.
+
+on:
+  schedule:
+    - cron: "17 4 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make sure the label exists
+        run: gh label create topic-review --color 7a3fe0 --description "A topic needs a content review" || true
+      - run: node scripts/spec-watch.mjs --create-issues

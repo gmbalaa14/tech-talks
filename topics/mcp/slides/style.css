@@ -1,0 +1,75 @@
+/* Slide styles: same token contract and topic theme as the scroll site. */
+@import "../../../shared/tokens/base.css";
+@import "../theme.css";
+@import "../diagram.css";
+
+:root {
+  --slidev-theme-primary: var(--color-accent);
+  --slidev-code-font-family: var(--font-mono);
+}
+
+.slidev-layout {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.slidev-layout h1,
+.slidev-layout h2,
+.slidev-layout h3 {
+  font-family: var(--font-display);
+  color: var(--color-text);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+.slidev-layout h1 { font-size: 2.9rem; margin-bottom: 1rem; }
+.slidev-layout h2 { font-size: 1.9rem; }
+.slidev-layout h3 { font-size: 1.35rem; letter-spacing: -0.01em; }
+.slidev-layout a { color: var(--color-accent); border-bottom: 0; }
+.slidev-layout p, .slidev-layout li { max-width: 46rem; }
+.slidev-layout .muted { color: var(--color-muted); }
+
+/* Layout-specific */
+.slidev-layout.cover { background: var(--color-bg); }
+.slidev-layout.cover h1 { font-size: 4rem; max-width: 40rem; }
+.slidev-layout.section { background: var(--color-text); color: var(--color-bg); }
+.slidev-layout.section h1 { color: var(--color-bg); }
+.slidev-layout.statement h1, .slidev-layout.statement h2 { font-size: 3.2rem; max-width: 42rem; }
+
+/* Code */
+.slidev-layout pre, .slidev-code-wrapper { font-family: var(--font-mono); }
+.slidev-layout code:not(pre code) { background: var(--color-surface-2); padding: 0.05em 0.35em; border-radius: var(--radius-s); font-size: 0.9em; }
+
+/* Diagrams */
+.slide-diagram { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-m); padding: 0.75rem; }
+
+/* A small badge for anything that moved in the latest revision */
+.new-badge {
+  display: inline-block; font-size: 0.8rem; font-weight: 700; padding: 0.1rem 0.6rem; border-radius: 999px;
+  background: var(--role-auth); color: #fff; vertical-align: middle; margin-left: 0.5rem; letter-spacing: 0;
+}
+
+/* Footer line on every slide */
+.slidev-layout .slide-foot { position: absolute; bottom: 0.9rem; left: 3.5rem; font-size: 0.8rem; color: var(--color-muted); }
+
+/* ---- Slide sizing fixes found by looking at the rendered deck ---- */
+:root {
+  --slidev-code-font-size: 12px;
+  --slidev-code-line-height: 1.45;
+}
+.slide-diagram { display: flex; justify-content: center; }
+.slide-diagram svg { max-height: 410px; width: auto; max-width: 100%; }
+.slidev-layout ul { margin-top: 0.4rem; }
+.slidev-layout li { font-size: 1.4rem; margin: 0.45rem 0; max-width: 52rem; }
+.slidev-layout table { font-size: 1.15rem; }
+.slidev-layout.cover p { font-size: 1.6rem; color: var(--color-muted); }
+.slidev-layout.cover p.muted { font-size: 1.05rem; }
+.slidev-layout.statement p { font-size: 1.5rem; color: var(--color-muted); max-width: 40rem; }
+/* give code the wider column on slides that show code */
+.slidev-layout.two-cols.wide-right { grid-template-columns: 1fr 2.4fr; }
+.slidev-layout.two-cols.cover-split { align-items: center; }
+.slidev-layout.statement p { margin-top: 1rem; opacity: 1; }

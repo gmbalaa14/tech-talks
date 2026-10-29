@@ -1,0 +1,15 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      { "type": "text", "text": "Work item 1042: Fix login timeout (Active)" }
+    ],
+    "structuredContent": {
+      "id": 1042,
+      "title": "Fix login timeout",
+      "state": "Active"
+    },
+    "isError": false
+  }
+}

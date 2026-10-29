@@ -1,0 +1,15 @@
+{
+  "name": "@tech-talks/__SLUG__-site",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^8.1.1",
+    "astro": "^7.4.2"
+  }
+}

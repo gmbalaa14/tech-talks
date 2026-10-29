@@ -1,0 +1,14 @@
+<svg class="diagram" viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A client sends a request to a server and gets a response">
+  <defs>
+    <marker id="ex-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-head-client"/></marker>
+    <marker id="ex-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-head-server"/></marker>
+  </defs>
+  <rect x="10" y="30" width="150" height="90" rx="10" class="d-client"/>
+  <text x="85" y="80" text-anchor="middle" class="d-title">Client</text>
+  <rect x="360" y="30" width="150" height="90" rx="10" class="d-server"/>
+  <text x="435" y="80" text-anchor="middle" class="d-title">Server</text>
+  <path d="M164 55H356" class="d-wire-client" marker-end="url(#ex-c)"/>
+  <text x="260" y="46" text-anchor="middle" class="d-small">request</text>
+  <path d="M356 100H164" class="d-wire-server" marker-end="url(#ex-s)"/>
+  <text x="260" y="118" text-anchor="middle" class="d-small">response</text>
+</svg>

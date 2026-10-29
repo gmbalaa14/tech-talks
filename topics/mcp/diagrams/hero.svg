@@ -1,0 +1,29 @@
+<svg class="diagram" viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three AI apps and three tools all connect through one MCP socket">
+  <!-- cables first, so the boxes sit on top -->
+  <path d="M150 62H215" class="d-wire-client"/>
+  <path d="M150 190H215" class="d-wire-client"/>
+  <path d="M150 318H215" class="d-wire-client"/>
+  <path d="M345 62H410" class="d-wire-server"/>
+  <path d="M345 190H410" class="d-wire-server"/>
+  <path d="M345 318H410" class="d-wire-server"/>
+
+  <rect x="10" y="30" width="140" height="64" rx="10" class="d-client"/>
+  <text x="80" y="68" text-anchor="middle" class="d-title">Claude</text>
+  <rect x="10" y="158" width="140" height="64" rx="10" class="d-client"/>
+  <text x="80" y="196" text-anchor="middle" class="d-title">Your IDE</text>
+  <rect x="10" y="286" width="140" height="64" rx="10" class="d-client"/>
+  <text x="80" y="324" text-anchor="middle" class="d-title">Your own app</text>
+
+  <rect x="215" y="14" width="130" height="352" rx="16" class="d-ink"/>
+  <text x="280" y="188" text-anchor="middle" class="d-title d-inv" style="font-size:26px">MCP</text>
+  <text x="280" y="212" text-anchor="middle" class="d-small d-inv" style="fill:#fff;opacity:.8">one plug</text>
+  <circle cx="215" cy="62" r="7" class="d-pill-client"/><circle cx="215" cy="190" r="7" class="d-pill-client"/><circle cx="215" cy="318" r="7" class="d-pill-client"/>
+  <circle cx="345" cy="62" r="7" class="d-pill-server"/><circle cx="345" cy="190" r="7" class="d-pill-server"/><circle cx="345" cy="318" r="7" class="d-pill-server"/>
+
+  <rect x="410" y="30" width="140" height="64" rx="10" class="d-server"/>
+  <text x="480" y="68" text-anchor="middle" class="d-title">Azure DevOps</text>
+  <rect x="410" y="158" width="140" height="64" rx="10" class="d-server"/>
+  <text x="480" y="196" text-anchor="middle" class="d-title">A database</text>
+  <rect x="410" y="286" width="140" height="64" rx="10" class="d-server"/>
+  <text x="480" y="324" text-anchor="middle" class="d-title">Your files</text>
+</svg>

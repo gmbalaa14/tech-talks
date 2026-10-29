@@ -1,0 +1,28 @@
+{
+  "_note": "Everything here can go stale. Pages and slides read it through <Fact k=\"...\" />. Update a value once and both the guide and the slides change. Bump lastReviewed after each review.",
+  "coversLabel": "MCP spec 2026-07-28",
+  "specRevision": "2026-07-28",
+  "previousRevision": "2025-11-25",
+  "specFinalDate": "28 July 2026",
+  "streamableHttpIntroduced": "2025-03-26",
+  "foundation": "Agentic AI Foundation, a directed fund under the Linux Foundation",
+  "foundationDate": "9 December 2025",
+  "serverCount": "more than 10,000 active servers",
+  "sdkDownloads": "over 97 million monthly SDK downloads",
+  "deprecatedNow": "roots, sampling and logging",
+  "removedNow": "the initialize handshake, session ids, resumability, ping and resources/subscribe",
+  "lastReviewed": "2026-10-27",
+  "sources": [
+    "https://github.com/modelcontextprotocol/specification/releases/tag/2026-07-28",
+    "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+    "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http",
+    "https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/",
+    "https://modelcontextprotocol.info/blog/joins-agentic-ai-foundation/",
+    "https://modelcontextprotocol.info/specification/",
+    "https://csharp.sdk.modelcontextprotocol.io/v2/concepts/stateless/stateless.html",
+    "https://quarkus.io/blog/mcp-stateless/",
+    "https://workos.com/blog/mcp-2026-spec-agent-authentication",
+    "https://ssojet.com/blog/mcp-authorization-spec-2026-07-28-what-changed",
+    "https://developer.konghq.com/ai-gateway/mcp-version-support/"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "tech-talks",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Internal tech talks: one folder per topic, one portal on top.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "workspaces": [
+    "portal",
+    "topics/*/site",
+    "topics/*/slides"
+  ],
+  "scripts": {
+    "dev:portal": "npm run dev -w portal",
+    "dev": "node scripts/dev-topic.mjs",
+    "new-topic": "node scripts/new-topic.mjs",
+    "build:topic": "node scripts/build-topic.mjs",
+    "build:portal": "node scripts/build-portal.mjs",
+    "build:all": "node scripts/build-all.mjs",
+    "check": "node scripts/check-contract.mjs && node --test \"scripts/*.test.mjs\"",
+    "spec-watch": "node scripts/spec-watch.mjs"
+  }
+}
